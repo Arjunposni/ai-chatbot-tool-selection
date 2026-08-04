@@ -5,6 +5,7 @@ from app.intent.hybrid import detect_intent_hybrid
 from app.tools.appointment_tool import book_appointment, check_appointment_status
 from app.tools.prescription_tool import request_prescription_refill
 from app.tools.results_tool import get_test_results
+from app.rag.faq_retriever import search_faq
 
 app = FastAPI(title="Healthcare AI Chatbot with Intelligent Tool Selection")
 
@@ -41,6 +42,18 @@ def chat(request: ChatRequest):
     intent_result = detect_intent_hybrid(request.message, patient_id=request.patient_id)
 
     if not intent_result.get("matched"):
+        # No tool matched — try RAG for general knowledge/FAQ questions
+        faq_result = search_faq(request.message)
+
+        if faq_result["matched"]:
+            return ChatResponse(
+                user_message=request.message,
+                intent_detected="faq_lookup",
+                method_used="rag",
+                tool_result=faq_result,
+                response=faq_result["answer"]
+            )
+
         return ChatResponse(
             user_message=request.message,
             intent_detected=None,
@@ -49,7 +62,8 @@ def chat(request: ChatRequest):
             response=(
                 "I'm not sure what you need help with. Could you clarify — "
                 "are you looking to book an appointment, check an appointment, "
-                "refill a prescription, or view test results?"
+                "refill a prescription, view test results, or ask a general "
+                "health question?"
             )
         )
 

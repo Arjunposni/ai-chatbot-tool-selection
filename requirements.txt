@@ -6,3 +6,4 @@ pydantic
 pandas
 chromadb
 sentence-transformers
+groq

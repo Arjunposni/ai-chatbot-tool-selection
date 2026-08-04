@@ -1,0 +1,181 @@
+[
+  {
+    "id": 1,
+    "category": "clear",
+    "query": "I want to book an appointment with a cardiologist for 2026-08-20",
+    "expected_intent": "book_appointment",
+    "expected_parameters": {"specialty": "cardiologist", "date": "2026-08-20"}
+  },
+  {
+    "id": 2,
+    "category": "clear",
+    "query": "Show me my upcoming appointments",
+    "expected_intent": "check_appointment_status",
+    "expected_parameters": {}
+  },
+  {
+    "id": 3,
+    "category": "clear",
+    "query": "I need a refill for my Metformin prescription",
+    "expected_intent": "request_prescription_refill",
+    "expected_parameters": {"medication": "Metformin"}
+  },
+  {
+    "id": 4,
+    "category": "clear",
+    "query": "Can you show me my lab results?",
+    "expected_intent": "get_test_results",
+    "expected_parameters": {}
+  },
+  {
+    "id": 5,
+    "category": "clear",
+    "query": "Schedule a checkup with a dermatologist next Monday",
+    "expected_intent": "book_appointment",
+    "expected_parameters": {"specialty": "dermatologist"}
+  },
+  {
+    "id": 6,
+    "category": "clear",
+    "query": "What are my current appointments?",
+    "expected_intent": "check_appointment_status",
+    "expected_parameters": {}
+  },
+  {
+    "id": 7,
+    "category": "clear",
+    "query": "Please renew my blood pressure medication",
+    "expected_intent": "request_prescription_refill",
+    "expected_parameters": {}
+  },
+  {
+    "id": 8,
+    "category": "clear",
+    "query": "How did my recent tests come back?",
+    "expected_intent": "get_test_results",
+    "expected_parameters": {}
+  },
+
+  {
+    "id": 9,
+    "category": "ambiguous",
+    "query": "I have an issue",
+    "expected_intent": null,
+    "expected_parameters": {}
+  },
+  {
+    "id": 10,
+    "category": "ambiguous",
+    "query": "I need help",
+    "expected_intent": null,
+    "expected_parameters": {}
+  },
+  {
+    "id": 11,
+    "category": "ambiguous",
+    "query": "Something's not right with me",
+    "expected_intent": null,
+    "expected_parameters": {}
+  },
+  {
+    "id": 12,
+    "category": "ambiguous",
+    "query": "Can you help with my medical stuff?",
+    "expected_intent": null,
+    "expected_parameters": {}
+  },
+  {
+    "id": 13,
+    "category": "ambiguous",
+    "query": "I need to see someone",
+    "expected_intent": null,
+    "expected_parameters": {}
+  },
+  {
+    "id": 14,
+    "category": "ambiguous",
+    "query": "What's going on with my health?",
+    "expected_intent": null,
+    "expected_parameters": {}
+  },
+
+  {
+    "id": 15,
+    "category": "multi_step",
+    "query": "Check my appointments and also refill my Metformin",
+    "expected_intent": ["check_appointment_status", "request_prescription_refill"],
+    "expected_parameters": {}
+  },
+  {
+    "id": 16,
+    "category": "multi_step",
+    "query": "Book me a cardiology appointment and show my test results",
+    "expected_intent": ["book_appointment", "get_test_results"],
+    "expected_parameters": {}
+  },
+  {
+    "id": 17,
+    "category": "multi_step",
+    "query": "I want to see my lab results and check on my appointment status",
+    "expected_intent": ["get_test_results", "check_appointment_status"],
+    "expected_parameters": {}
+  },
+  {
+    "id": 18,
+    "category": "multi_step",
+    "query": "Refill my prescription and book a follow-up with a cardiologist",
+    "expected_intent": ["request_prescription_refill", "book_appointment"],
+    "expected_parameters": {}
+  },
+
+  {
+    "id": 19,
+    "category": "sensitive",
+    "query": "Can you show me my test results, I'm worried about my blood sugar",
+    "expected_intent": "get_test_results",
+    "expected_parameters": {}
+  },
+  {
+    "id": 20,
+    "category": "sensitive",
+    "query": "My blood pressure has been really high lately, can you check my last results?",
+    "expected_intent": "get_test_results",
+    "expected_parameters": {}
+  },
+  {
+    "id": 21,
+    "category": "sensitive",
+    "query": "I think I have diabetes, can you pull up my recent tests?",
+    "expected_intent": "get_test_results",
+    "expected_parameters": {}
+  },
+  {
+    "id": 22,
+    "category": "sensitive",
+    "query": "I'm on Metformin for my diabetes and need more, can you refill it?",
+    "expected_intent": "request_prescription_refill",
+    "expected_parameters": {"medication": "Metformin"}
+  },
+
+  {
+    "id": 23,
+    "category": "clear",
+    "query": "when's my next visit?",
+    "expected_intent": "check_appointment_status",
+    "expected_parameters": {}
+  },
+  {
+    "id": 24,
+    "category": "clear",
+    "query": "need more of my meds, the metformin one",
+    "expected_intent": "request_prescription_refill",
+    "expected_parameters": {"medication": "Metformin"}
+  },
+  {
+    "id": 25,
+    "category": "clear",
+    "query": "how'd my bloodwork come back?",
+    "expected_intent": "get_test_results",
+    "expected_parameters": {}
+  }
+]
