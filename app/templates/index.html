@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Healthcare AI</title>
+
+<link rel="stylesheet" href="/static/style.css">
+
+</head>
+
+<body>
+
+<div class="chat-container">
+
+    <div class="header">
+
+        <div>
+            <h2>🩺 Healthcare AI Assistant</h2>
+            <span>Powered by Gemini + FastAPI</span>
+        </div>
+
+        <div class="status">
+            🟢 Online
+        </div>
+
+    </div>
+
+    <div id="chat-box">
+
+        <div class="bot-message">
+            Hello 👋
+            <br><br>
+            I can help you:
+            <ul>
+                <li>Book Appointment</li>
+                <li>Check Appointment</li>
+                <li>Prescription Refill</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <div class="input-area">
+
+        <input
+            id="message"
+            type="text"
+            placeholder="Ask something..."
+        >
+
+        <button onclick="sendMessage()">
+            ➤
+        </button>
+
+    </div>
+
+</div>
+
+<script src="/static/script.js"></script>
+
+</body>
+</html>

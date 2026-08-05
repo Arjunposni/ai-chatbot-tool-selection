@@ -4,7 +4,12 @@
 Our clinic is open Monday to Saturday, 9:00 AM to 6:00 PM. We are closed on Sundays and public holidays.
 
 ## What should I do in a medical emergency?
-For medical emergencies, call your local emergency number immediately or go to the nearest emergency room. Do not use this chatbot for emergencies.
+
+Medical emergencies include severe chest pain, difficulty breathing, unconsciousness, heavy bleeding, seizures, stroke symptoms, or any life-threatening condition.
+
+If you or someone else is experiencing any of these symptoms, call your local emergency number immediately or go to the nearest emergency room.
+
+Do not rely on this chatbot during emergencies.
 
 ## What are common symptoms of the flu?
 Common flu symptoms include fever, chills, muscle aches, cough, congestion, runny nose, headaches, and fatigue. Symptoms usually appear suddenly.
