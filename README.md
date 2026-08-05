@@ -521,20 +521,6 @@ Single user query triggering multiple healthcare tools.
 
 ---
 
-# 🔮 Future Improvements
-
-- Authentication
-- Multiple Patients
-- Real Hospital APIs
-- Doctor Availability
-- Calendar Integration
-- Email Notifications
-- Voice Support
-- Better Multi-intent Handling
-- More Healthcare Tools
-
----
-
 # 👨‍💻 Author
 
 **Arjun Posni**
