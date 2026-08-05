@@ -128,13 +128,20 @@ source venv/bin/activate
 
 ---
 
-## 3 Install Dependencies
+## 3 Requirements
+
+Before running the project, ensure you have:
+
+- Python 3.11 or later
+- Git
+- A Gemini API key or a Groq API key
+- Internet connection (for LLM API calls)
+
+Install all dependencies using:
 
 ```bash
 pip install -r requirements.txt
 ```
-
----
 
 ## 4 Create a .env File
 
