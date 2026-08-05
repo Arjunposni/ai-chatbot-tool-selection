@@ -49,22 +49,29 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
 
     session = get_session(patient_id)
 
-    # If the user is mid-conversation and wants to cancel, stop here.
+    # User cancelled an active conversation.
     if session and message.strip().lower() in CANCEL_KEYWORDS:
         clear_session(patient_id)
+
         return {
             "intent_detected": None,
             "method_used": "conversation",
             "tool_result": None,
-            "response": "No problem, I've cancelled that. How else can I help?",
+            "response": (
+                "No problem, I've cancelled that. "
+                "How else can I help?"
+            ),
         }
+
+    # ----------------------------------------------------------
+    # Continue an existing conversation
+    # ----------------------------------------------------------
 
     if session:
 
         intent = session["intent"]
         waiting_for = session["waiting_for"]
 
-        # Save the user's reply for the missing parameter.
         if waiting_for:
 
             value = extract_parameter(
@@ -83,7 +90,6 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
         params = session["parameters"]
         params["patient_id"] = patient_id
 
-        # Check whether more information is required.
         slot, question = next_question(
             intent,
             params,
@@ -103,7 +109,6 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
                 "response": question,
             }
 
-        # Execute tool
         success, tool_result = execute_tool(
             intent,
             params,
@@ -119,17 +124,24 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
 
                 appointments = tool_result["appointments"]
 
-                if appointments:
-                    response = (
-                        f"Found {len(appointments)} appointment(s)."
-                    )
-                else:
-                    response = "No appointments found."
+                response = (
+                    f"Found {len(appointments)} appointment(s)."
+                    if appointments
+                    else "No appointments found."
+                )
 
             elif "results" in tool_result:
-                response = "Retrieved your test results."
+
+                results = tool_result["results"]
+
+                response = (
+                    f"Found {len(results)} test result(s)."
+                    if results
+                    else "No test results found."
+                )
 
             else:
+
                 response = "Action completed successfully."
 
         return {
@@ -147,21 +159,28 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
         message,
         patient_id,
     )
-
-    # ==========================================================
+        # ==========================================================
     # STEP 3 : FAQ / RAG
     # ==========================================================
 
     if not intent_result["matched"]:
 
-        # Surface real API/system errors instead of hiding them behind
-        # a generic "couldn't understand" message — this distinction
-        # matters for debugging (rate limits, API failures) vs genuine
-        # ambiguous user input.
-        reason = intent_result.get("reason", "") or ""
+        reason = (intent_result.get("reason") or "").lower()
+
+        # Only genuine API failures should stop execution.
+        # Groq tool validation failures should simply fall back to RAG.
         is_system_error = any(
             marker in reason
-            for marker in ["Error calling", "429", "RESOURCE_EXHAUSTED", "tool_use_failed"]
+            for marker in [
+                "429",
+                "resource_exhausted",
+                "authentication",
+                "invalid api key",
+                "connection",
+                "timeout",
+                "network",
+                "internal server error",
+            ]
         )
 
         if is_system_error:
@@ -169,7 +188,10 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
                 "intent_detected": None,
                 "method_used": "error",
                 "tool_result": None,
-                "response": f"⚠️ System error (not a real 'no match'): {reason}",
+                "response": (
+                    "⚠️ The AI service is temporarily unavailable. "
+                    "Please try again later."
+                ),
             }
 
         faq = search_faq(message)
@@ -249,25 +271,37 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
             "tool_result": None,
             "response": question,
         }
-
     # ==========================================================
     # STEP 6 : Execute Tool(s)
     # ==========================================================
 
     all_intents = intent_result.get(
         "all_intents",
-        [{"intent": intent, "parameters": params}],
+        [
+            {
+                "intent": intent,
+                "parameters": params,
+            }
+        ],
     )
 
-    # Only run multi-intent execution if every detected intent already
-    # has everything it needs. Otherwise, fall back to the single first
-    # intent (existing slot-filling flow already handles that path).
-    can_execute_all = len(all_intents) > 1 and all(
-        next_question(
-            item["intent"],
-            {**item["parameters"], "patient_id": patient_id},
-        )[0] is None
-        for item in all_intents
+    # ----------------------------------------------------------
+    # Multi-intent execution
+    # ----------------------------------------------------------
+
+    can_execute_all = (
+        len(all_intents) > 1
+        and all(
+            next_question(
+                item["intent"],
+                {
+                    **item["parameters"],
+                    "patient_id": patient_id,
+                },
+            )[0]
+            is None
+            for item in all_intents
+        )
     )
 
     if can_execute_all:
@@ -277,44 +311,76 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
 
         for item in all_intents:
 
-            item_params = {**item["parameters"], "patient_id": patient_id}
+            item_params = {
+                **item["parameters"],
+                "patient_id": patient_id,
+            }
 
             success, tool_result = execute_tool(
                 item["intent"],
                 item_params,
             )
 
-            combined_results.append({
-                "intent": item["intent"],
-                "result": tool_result,
-            })
+            combined_results.append(
+                {
+                    "intent": item["intent"],
+                    "result": tool_result,
+                }
+            )
 
             msg = tool_result.get("message")
 
             if msg is None:
 
                 if "appointments" in tool_result:
+
                     appointments = tool_result["appointments"]
+
                     msg = (
                         f"Found {len(appointments)} appointment(s)."
                         if appointments
                         else "No appointments found."
                     )
+
                 elif "results" in tool_result:
-                    msg = "Retrieved your test results."
+
+                    results = tool_result["results"]
+
+                    msg = (
+                        f"Found {len(results)} test result(s)."
+                        if results
+                        else "No test results found."
+                    )
+
+                elif "medication" in tool_result:
+
+                    msg = (
+                        f"Refill requested for "
+                        f"{tool_result['medication']}."
+                    )
+
                 else:
+
                     msg = "Action completed successfully."
 
             response_parts.append(msg)
 
         return {
-            "intent_detected": [item["intent"] for item in all_intents],
+            "intent_detected": [
+                item["intent"]
+                for item in all_intents
+            ],
             "method_used": intent_result["method"],
-            "tool_result": {"multi_results": combined_results},
+            "tool_result": {
+                "multi_results": combined_results
+            },
             "response": " ".join(response_parts),
         }
 
-    # Single-intent path (unchanged behavior)
+    # ----------------------------------------------------------
+    # Single-intent execution
+    # ----------------------------------------------------------
+
     success, tool_result = execute_tool(
         intent,
         params,
@@ -328,17 +394,31 @@ def process_chat(message: str, patient_id: str = "p1") -> dict:
 
             appointments = tool_result["appointments"]
 
-            if appointments:
-                response = (
-                    f"Found {len(appointments)} appointment(s)."
-                )
-            else:
-                response = "No appointments found."
+            response = (
+                f"Found {len(appointments)} appointment(s)."
+                if appointments
+                else "No appointments found."
+            )
 
         elif "results" in tool_result:
-            response = "Retrieved your test results."
+
+            results = tool_result["results"]
+
+            response = (
+                f"Found {len(results)} test result(s)."
+                if results
+                else "No test results found."
+            )
+
+        elif "medication" in tool_result:
+
+            response = (
+                f"Refill requested for "
+                f"{tool_result['medication']}."
+            )
 
         else:
+
             response = "Action completed successfully."
 
     return {
