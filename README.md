@@ -467,19 +467,57 @@ Example output
 
 # 📸 Screenshots
 
-Add screenshots here.
+## 🏠 Home Screen
 
-Examples
+![Home Screen](screenshots/home.png)
 
-- Home Screen
+---
 
-- Appointment Booking
+## 📅 Appointment Booking
 
-- Prescription Refill
+Demonstrates multi-turn slot filling for booking an appointment.
 
-- Lab Results
+![Appointment Booking](screenshots/bookings.png)
 
-- FAQ
+---
+
+## 📋 Appointment Status
+
+Displays all appointments for the patient.
+
+![Appointment Status](screenshots/appointments.png)
+
+---
+
+## 💊 Prescription Refill
+
+Shows prescription refill using tool execution.
+
+![Prescription Refill](screenshots/refill.png)
+
+---
+
+## 🧪 Lab Results
+
+Displays the patient's lab/test results.
+
+![Lab Results](screenshots/lab_results.png)
+
+---
+
+## 📚 FAQ / RAG
+
+Answers healthcare FAQs using the ChromaDB knowledge base.
+
+![FAQ](screenshots/faq_rag.png)
+
+---
+
+## 🔀 Multi-Intent Tool Calling
+
+Single user query triggering multiple healthcare tools.
+
+![Multi Intent](screenshots/multi_intent.png)
 
 ---
 
