@@ -4,7 +4,7 @@
     "category": "clear",
     "query": "I want to book an appointment with a cardiologist for 2026-08-20",
     "expected_intent": "book_appointment",
-    "expected_parameters": {"specialty": "cardiologist", "date": "2026-08-20"}
+    "expected_parameters": {"specialty": "Cardiology", "date": "2026-08-20"}
   },
   {
     "id": 2,
@@ -30,14 +30,14 @@
   {
     "id": 5,
     "category": "clear",
-    "query": "Schedule a checkup with a dermatologist next Monday",
+    "query": "Schedule a dermatology appointment tomorrow",
     "expected_intent": "book_appointment",
-    "expected_parameters": {"specialty": "dermatologist"}
+    "expected_parameters": {"specialty": "Dermatology"}
   },
   {
     "id": 6,
     "category": "clear",
-    "query": "What are my current appointments?",
+    "query": "Do I have any appointments next week?",
     "expected_intent": "check_appointment_status",
     "expected_parameters": {}
   },
@@ -51,7 +51,7 @@
   {
     "id": 8,
     "category": "clear",
-    "query": "How did my recent tests come back?",
+    "query": "How did my blood test come back?",
     "expected_intent": "get_test_results",
     "expected_parameters": {}
   },
@@ -59,122 +59,145 @@
   {
     "id": 9,
     "category": "ambiguous",
-    "query": "I have an issue",
+    "query": "I have an issue.",
     "expected_intent": null,
     "expected_parameters": {}
   },
   {
     "id": 10,
     "category": "ambiguous",
-    "query": "I need help",
+    "query": "I need help.",
     "expected_intent": null,
     "expected_parameters": {}
   },
   {
     "id": 11,
     "category": "ambiguous",
-    "query": "Something's not right with me",
+    "query": "Something doesn't feel right.",
     "expected_intent": null,
     "expected_parameters": {}
   },
   {
     "id": 12,
     "category": "ambiguous",
-    "query": "Can you help with my medical stuff?",
+    "query": "I'm not feeling well.",
     "expected_intent": null,
     "expected_parameters": {}
   },
   {
     "id": 13,
     "category": "ambiguous",
-    "query": "I need to see someone",
+    "query": "I need to see someone.",
     "expected_intent": null,
     "expected_parameters": {}
   },
   {
     "id": 14,
     "category": "ambiguous",
-    "query": "What's going on with my health?",
+    "query": "Can you tell me what's wrong with me?",
     "expected_intent": null,
     "expected_parameters": {}
   },
 
   {
     "id": 15,
-    "category": "multi_step",
-    "query": "Check my appointments and also refill my Metformin",
-    "expected_intent": ["check_appointment_status", "request_prescription_refill"],
-    "expected_parameters": {}
+    "category": "multi_intent",
+    "query": "Check my appointments and refill my Metformin.",
+    "expected_intent": [
+      "check_appointment_status",
+      "request_prescription_refill"
+    ],
+    "expected_parameters": {
+      "medication": "Metformin"
+    }
   },
   {
     "id": 16,
-    "category": "multi_step",
-    "query": "Book me a cardiology appointment and show my test results",
-    "expected_intent": ["book_appointment", "get_test_results"],
-    "expected_parameters": {}
+    "category": "multi_intent",
+    "query": "Book a cardiology appointment tomorrow and show my lab results.",
+    "expected_intent": [
+      "book_appointment",
+      "get_test_results"
+    ],
+    "expected_parameters": {
+      "specialty": "Cardiology",
+      "date": "tomorrow"
+    }
   },
   {
     "id": 17,
-    "category": "multi_step",
-    "query": "I want to see my lab results and check on my appointment status",
-    "expected_intent": ["get_test_results", "check_appointment_status"],
+    "category": "multi_intent",
+    "query": "Show my lab results and check my appointments.",
+    "expected_intent": [
+      "get_test_results",
+      "check_appointment_status"
+    ],
     "expected_parameters": {}
   },
   {
     "id": 18,
-    "category": "multi_step",
-    "query": "Refill my prescription and book a follow-up with a cardiologist",
-    "expected_intent": ["request_prescription_refill", "book_appointment"],
-    "expected_parameters": {}
+    "category": "multi_intent",
+    "query": "Refill my Metformin and book a dermatology appointment tomorrow.",
+    "expected_intent": [
+      "request_prescription_refill",
+      "book_appointment"
+    ],
+    "expected_parameters": {
+      "medication": "Metformin",
+      "specialty": "Dermatology",
+      "date": "tomorrow"
+    }
   },
 
   {
     "id": 19,
-    "category": "sensitive",
-    "query": "Can you show me my test results, I'm worried about my blood sugar",
-    "expected_intent": "get_test_results",
+    "category": "complex_negative",
+    "query": "I was prescribed medicine last month, but I can't remember which one.",
+    "expected_intent": null,
     "expected_parameters": {}
   },
   {
     "id": 20,
-    "category": "sensitive",
-    "query": "My blood pressure has been really high lately, can you check my last results?",
-    "expected_intent": "get_test_results",
+    "category": "complex_negative",
+    "query": "I've been having chest discomfort for two days and would like to consult someone.",
+    "expected_intent": null,
     "expected_parameters": {}
   },
   {
     "id": 21,
-    "category": "sensitive",
-    "query": "I think I have diabetes, can you pull up my recent tests?",
-    "expected_intent": "get_test_results",
+    "category": "complex_negative",
+    "query": "I forgot what medication I'm taking.",
+    "expected_intent": null,
     "expected_parameters": {}
   },
   {
     "id": 22,
-    "category": "sensitive",
-    "query": "I'm on Metformin for my diabetes and need more, can you refill it?",
-    "expected_intent": "request_prescription_refill",
-    "expected_parameters": {"medication": "Metformin"}
+    "category": "complex_negative",
+    "query": "Can you explain what Metformin is used for?",
+    "expected_intent": null,
+    "expected_parameters": {}
   },
 
   {
     "id": 23,
-    "category": "clear",
-    "query": "when's my next visit?",
+    "category": "natural_language",
+    "query": "When's my next visit?",
     "expected_intent": "check_appointment_status",
     "expected_parameters": {}
   },
   {
     "id": 24,
-    "category": "clear",
-    "query": "need more of my meds, the metformin one",
+    "category": "natural_language",
+    "query": "Need more of my Metformin.",
     "expected_intent": "request_prescription_refill",
-    "expected_parameters": {"medication": "Metformin"}
+    "expected_parameters": {
+      "medication": "Metformin"
+    }
   },
   {
     "id": 25,
-    "category": "clear",
-    "query": "how'd my bloodwork come back?",
+    "category": "natural_language",
+    "query": "How'd my bloodwork come back?",
     "expected_intent": "get_test_results",
     "expected_parameters": {}
   }

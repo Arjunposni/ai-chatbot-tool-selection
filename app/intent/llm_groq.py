@@ -50,7 +50,7 @@ _tools = _build_groq_tools()
 def detect_intent_llm_groq(
     user_query: str,
     patient_id: str = "p1",
-    max_retries: int = 1,
+    max_retries: int = 2,
 ) -> dict:
     """
     Detect healthcare intent(s) using Groq Function Calling.

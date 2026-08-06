@@ -4,29 +4,46 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from app.services.chat_service import process_chat
+from app.graph import graph
+
 
 app = FastAPI(
     title="Healthcare AI Chatbot with Intelligent Tool Selection"
 )
 
-# Serve CSS and JavaScript
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# ----------------------------------------------------------
+# Static Files
+# ----------------------------------------------------------
 
-# HTML templates
-templates = Jinja2Templates(directory="app/templates")
+app.mount(
+    "/static",
+    StaticFiles(directory="app/static"),
+    name="static",
+)
 
+# ----------------------------------------------------------
+# Templates
+# ----------------------------------------------------------
+
+templates = Jinja2Templates(
+    directory="app/templates",
+)
+
+
+# ----------------------------------------------------------
+# Request Model
+# ----------------------------------------------------------
 
 class ChatRequest(BaseModel):
-    """Incoming request from the frontend."""
-
     message: str
     patient_id: str = "p1"
 
 
-class ChatResponse(BaseModel):
-    """Response returned to the frontend."""
+# ----------------------------------------------------------
+# Response Model
+# ----------------------------------------------------------
 
+class ChatResponse(BaseModel):
     user_message: str
     intent_detected: str | list[str] | None
     method_used: str
@@ -34,32 +51,61 @@ class ChatResponse(BaseModel):
     response: str
 
 
+# ----------------------------------------------------------
+# Home Page
+# ----------------------------------------------------------
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    """Serve the chatbot UI."""
-
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={}
+        context={},
     )
 
+
+# ----------------------------------------------------------
+# Chat Endpoint
+# ----------------------------------------------------------
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
     """
-    Delegate the chatbot workflow to chat_service.
+    Process a chat message directly through LangGraph.
     """
 
-    result = process_chat(
-        message=request.message,
-        patient_id=request.patient_id,
-    )
+    state = {
+        "message": request.message,
+        "patient_id": request.patient_id,
+    }
+
+    result = graph.invoke(state)
+
+    print("\n" + "=" * 80)
+    print("LANGGRAPH FINAL STATE")
+    print(result)
+    print("=" * 80 + "\n")
+
+    if result.get("all_intents"):
+        intent_detected = [
+            item["intent"]
+            for item in result["all_intents"]
+        ]
+    else:
+        intent_detected = result.get("intent")
 
     return ChatResponse(
         user_message=request.message,
-        intent_detected=result.get("intent_detected"),
-        method_used=result.get("method_used"),
-        tool_result=result.get("tool_result"),
-        response=result.get("response"),
+        intent_detected=intent_detected,
+        method_used=result.get(
+            "method",
+            "langgraph",
+        ),
+        tool_result=result.get(
+            "tool_result",
+        ),
+        response=result.get(
+            "response",
+            "Sorry, I couldn't process your request.",
+        ),
     )

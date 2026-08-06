@@ -7,6 +7,8 @@ the user's first message using lightweight rules.
 
 import re
 
+from app.conversation.date_utils import normalize_date
+
 
 SPECIALTIES = [
     "cardiology",
@@ -50,19 +52,36 @@ def extract_parameters(intent: str, message: str) -> dict:
             r"\b\d{1,2}/\d{1,2}/(?:\d{2}|\d{4})\b",
         ]
 
+        date_found = None
+
         for pattern in patterns:
 
             match = re.search(pattern, message)
 
             if match:
-                params["date"] = match.group()
+                date_found = match.group()
                 break
 
-        if "today" in text:
-            params["date"] = "today"
+        if date_found is None:
 
-        elif "tomorrow" in text:
-            params["date"] = "tomorrow"
+            if "today" in text:
+                date_found = "today"
+
+            elif "tomorrow" in text:
+                date_found = "tomorrow"
+
+            elif "yesterday" in text:
+                date_found = "yesterday"
+
+        if date_found is not None:
+
+            normalized = normalize_date(date_found)
+
+            # normalize_date returns None for invalid/past dates
+            # (e.g. "yesterday") — only set the param if it's valid,
+            # so slot filling correctly asks for a real date instead.
+            if normalized is not None:
+                params["date"] = normalized
 
     # ==========================================================
     # Prescription Refill

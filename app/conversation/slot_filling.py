@@ -44,6 +44,24 @@ SLOT_QUESTIONS = {
 }
 
 
+# ---------------------------------------------------------
+# Values that indicate the LLM guessed a placeholder
+# instead of a real value — these should be treated as
+# missing, not as a valid answer.
+# ---------------------------------------------------------
+
+_PLACEHOLDER_VALUES = {
+    "unknown",
+    "n/a",
+    "na",
+    "none",
+    "not specified",
+    "unspecified",
+    "tbd",
+    "",
+}
+
+
 def required_slots(intent: str) -> list[str]:
     """
     Return the required parameters for a tool.
@@ -55,7 +73,9 @@ def required_slots(intent: str) -> list[str]:
 def missing_slots(intent: str, parameters: dict) -> list[str]:
     """
     Return all required parameters that
-    are currently missing.
+    are currently missing (including placeholder
+    values like "unknown" that the LLM sometimes
+    guesses instead of leaving the field empty).
     """
 
     missing = []
@@ -67,7 +87,7 @@ def missing_slots(intent: str, parameters: dict) -> list[str]:
         if value is None:
             missing.append(slot)
 
-        elif isinstance(value, str) and value.strip() == "":
+        elif isinstance(value, str) and value.strip().lower() in _PLACEHOLDER_VALUES:
             missing.append(slot)
 
     return missing

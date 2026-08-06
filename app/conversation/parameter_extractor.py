@@ -6,13 +6,30 @@ a multi-turn conversation.
 """
 
 import re
-from datetime import datetime, timedelta
+
+from app.conversation.date_utils import normalize_date
+
+
+SUPPORTED_SPECIALTIES = {
+    "cardiology",
+    "dermatology",
+    "orthopedics",
+    "neurology",
+    "pediatrics",
+    "dentistry",
+    "ent",
+    "ophthalmology",
+    "gynecology",
+}
 
 
 def extract_parameter(slot: str, message: str):
     """
     Extract the value for the requested slot
     from the user's latest reply.
+
+    Returns an empty string ("") when the value is invalid so
+    slot_filling.py continues asking for that slot.
     """
 
     text = message.strip()
@@ -22,7 +39,14 @@ def extract_parameter(slot: str, message: str):
     # ==========================================================
 
     if slot == "specialty":
-        return text.title()
+
+        candidate = text.lower().strip()
+
+        if candidate in SUPPORTED_SPECIALTIES:
+            return candidate.title()
+
+        # Invalid specialty -> ask again
+        return ""
 
     # ==========================================================
     # Medication
@@ -30,8 +54,6 @@ def extract_parameter(slot: str, message: str):
 
     if slot == "medication":
 
-        # User may reply:
-        # "Refill Metformin 500mg"
         match = re.search(
             r"refill\s+(.+)",
             text,
@@ -39,11 +61,14 @@ def extract_parameter(slot: str, message: str):
         )
 
         if match:
-            return match.group(1).strip()
+            medication = match.group(1).strip()
 
-        # User may simply reply:
-        # "Metformin 500mg"
-        return text
+            if medication:
+                return medication
+
+            return ""
+
+        return text if text else ""
 
     # ==========================================================
     # Date
@@ -51,38 +76,13 @@ def extract_parameter(slot: str, message: str):
 
     if slot == "date":
 
-        lower = text.lower()
+        normalized = normalize_date(text)
 
-        # Natural language dates
-        if lower == "today":
-            return datetime.today().strftime("%Y-%m-%d")
+        # Invalid or past date
+        if normalized is None:
+            return ""
 
-        if lower == "tomorrow":
-            return (
-                datetime.today() +
-                timedelta(days=1)
-            ).strftime("%Y-%m-%d")
-
-        # dd/mm/yyyy OR dd/mm/yy
-        match = re.search(
-            r"\b\d{1,2}/\d{1,2}/(?:\d{2}|\d{4})\b",
-            text,
-        )
-
-        if match:
-            return match.group()
-
-        # yyyy-mm-dd
-        match = re.search(
-            r"\b\d{4}-\d{2}-\d{2}\b",
-            text,
-        )
-
-        if match:
-            return match.group()
-
-        # Return original text if no pattern matched
-        return text
+        return normalized
 
     # ==========================================================
     # Default
