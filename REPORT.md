@@ -1,62 +1,41 @@
 # Technical Report
-
-## Healthcare AI Chatbot with Intelligent Tool Selection
+# Healthcare AI Chatbot with Intelligent Tool Selection
 
 **Author:** Arjun Posni
 
----
+**Repository:** https://github.com/Arjunposni/ai-chatbot-tool-selection
 
-# 1. Introduction
-
-The objective of this project was to build an intelligent healthcare chatbot capable of understanding user requests, identifying the correct healthcare service, extracting required information, and executing the appropriate tool.
-
-Rather than implementing a simple rule-based chatbot, the project evolved into a **stateful conversational AI system** that supports multi-turn conversations, conversation memory, multi-intent execution, and Retrieval-Augmented Generation (RAG) for healthcare FAQs.
-
-The final implementation focuses on clean architecture, modularity, and extensibility while demonstrating practical software engineering principles.
+**Domain:** Healthcare
 
 ---
 
-# 2. Problem Statement
+# 1. Problem & Approach Summary
 
-Healthcare conversations are rarely straightforward. Users often:
+The objective of this project was to build an intelligent healthcare chatbot capable of understanding user intent, selecting the correct healthcare tool, extracting the required parameters, and executing the requested operation.
 
-* provide incomplete information,
-* ask multiple questions in a single message,
-* continue previous conversations,
-* or request general healthcare information alongside transactional tasks.
+Rather than implementing a simple request-response chatbot, I approached the assignment as the design of a complete conversational AI system. During development, the project evolved significantly—from a sequential service-based architecture into a stateful workflow orchestrated by **LangGraph**.
 
-A traditional sequential chatbot struggles to manage these scenarios efficiently.
+The final chatbot supports:
 
-The goal was therefore to design a chatbot capable of:
+- Hybrid intent detection
+- Stateful conversations
+- Slot filling
+- Multi-intent execution
+- Retrieval-Augmented Generation (RAG)
+- Multiple LLM providers
+- Conversation resume and cancellation
 
-* Understanding user intent
-* Managing conversation state
-* Collecting missing information
-* Executing healthcare tools
-* Retrieving healthcare knowledge through semantic search
-
----
-
-# 3. Technology Stack
-
-| Component            | Technology                  |
-| -------------------- | --------------------------- |
-| Backend              | FastAPI                     |
-| Workflow Engine      | LangGraph                   |
-| Programming Language | Python                      |
-| Database             | SQLite                      |
-| Vector Database      | ChromaDB                    |
-| Embeddings           | all-MiniLM-L6-v2            |
-| LLM Providers        | Google Gemini, Groq, Nebius |
-| Frontend             | HTML, CSS, JavaScript       |
+The project emphasizes software architecture, modularity, maintainability, and practical AI engineering rather than simply satisfying the functional requirements.
 
 ---
 
-# 4. Architecture Evolution
+# 2. System Architecture
 
-The project initially followed a traditional sequential architecture.
+## Initial Architecture
 
-```text
+The first implementation followed a traditional sequential pipeline.
+
+```
 Frontend
     │
 FastAPI
@@ -70,11 +49,15 @@ Parameter Extraction
 Tool Execution
 ```
 
-Although functional, this architecture became increasingly difficult to extend as new capabilities such as conversation memory, slot filling, and multi-intent execution were introduced.
+This design worked well for simple requests but became increasingly difficult to extend as new conversational capabilities were introduced.
 
-To address these limitations, the project was completely refactored using **LangGraph**.
+---
 
-```text
+## Final Architecture
+
+The application was completely refactored to use LangGraph as the orchestration engine.
+
+```
 Frontend
     │
 FastAPI
@@ -88,122 +71,263 @@ LangGraph
 ├── Hybrid Intent Detection
 ├── Parameter Extraction
 ├── Slot Filling
-├── Execute Tool
+├── Execute Tool(s)
 └── FAQ Retrieval (RAG)
 ```
 
-Instead of executing a fixed sequence of steps, LangGraph orchestrates the conversation through independent nodes, making the workflow modular, maintainable, and easier to extend.
+Each node is responsible for a single task while LangGraph manages routing, execution order, and conversation state.
+
+This modular architecture significantly improves maintainability and allows new capabilities to be added without rewriting the entire workflow.
 
 ---
 
-# 5. LangGraph Workflow
+# 3. Why LangGraph?
 
-The chatbot workflow is composed of specialized nodes, each responsible for a single task.
+Initially, the chatbot followed a linear execution model where every request passed through the same sequence of operations.
 
-| Node                    | Responsibility                                  |
-| ----------------------- | ----------------------------------------------- |
-| Resume Conversation     | Restores unfinished conversations               |
-| Continue Conversation   | Continues slot filling using stored session     |
-| Cancel Conversation     | Clears active conversation state                |
-| Hybrid Intent Detection | Combines rule-based detection with LLM fallback |
-| Parameter Extraction    | Extracts specialty, dates, and patient details  |
-| Slot Filling            | Requests missing parameters from the user       |
-| Execute Tool            | Executes one or multiple healthcare tools       |
-| FAQ Retrieval           | Retrieves healthcare information using ChromaDB |
+As features such as conversation memory, slot filling, resume conversations, and multi-intent execution were introduced, the sequential architecture became difficult to maintain. New features required modifying the central orchestration logic, resulting in tightly coupled code.
 
-This modular workflow makes adding new features significantly easier without affecting the rest of the system.
+LangGraph solved these problems by introducing graph-based workflow orchestration.
+
+Instead of one large execution pipeline, every responsibility became an independent node. This made the application:
+
+- Modular
+- Easier to debug
+- Easier to extend
+- Better suited for conversational AI workflows
+- More maintainable
+
+FastAPI now simply invokes:
+
+```python
+graph.invoke(state)
+```
+
+while LangGraph controls the complete conversation lifecycle.
+
+---
+
+# 4. LangGraph Workflow
+
+The workflow consists of specialized nodes.
+
+| Node | Responsibility |
+|------|----------------|
+| Resume Conversation | Restore unfinished conversations |
+| Continue Conversation | Continue slot filling |
+| Cancel Conversation | Clear active sessions |
+| Hybrid Intent Detection | Rule-based detection with LLM fallback |
+| Parameter Extraction | Extract specialty, date and patient details |
+| Slot Filling | Request missing parameters |
+| Execute Tool | Execute healthcare tools |
+| FAQ Retrieval | Retrieve healthcare FAQs using semantic search |
+
+Each node performs one clearly defined responsibility, resulting in a clean separation of concerns.
+
+---
+
+# 5. Engineering Challenges & Solutions
+
+## Challenge 1 – Sequential Architecture
+
+### Problem
+
+The original service-based architecture became increasingly complex as new conversational features were introduced.
+
+### Solution
+
+Migrated the entire orchestration layer to LangGraph.
+
+### Result
+
+- Cleaner workflow
+- Better modularity
+- Easier maintenance
+- Simplified future development
+
+---
+
+## Challenge 2 – Incomplete User Requests
+
+### Example
+
+```
+Book appointment
+```
+
+The chatbot could not execute the tool because important parameters such as specialty and appointment date were missing.
+
+### Solution
+
+Implemented slot filling that asks users only for the missing information before executing the tool.
+
+---
+
+## Challenge 3 – Conversation Memory
+
+Healthcare conversations often span multiple user messages.
+
+Example:
+
+```
+User:
+Book appointment
+
+Bot:
+Which specialty?
+
+User:
+Cardiology
+
+Bot:
+Which date?
+
+User:
+Tomorrow
+```
+
+### Solution
+
+Implemented conversation state management that stores pending conversations and automatically resumes them.
+
+---
+
+## Challenge 4 – Multi-Intent Requests
+
+Example:
+
+```
+Check my appointments and show my test results.
+```
+
+Initially only one tool was executed.
+
+### Solution
+
+Enhanced intent detection and LangGraph execution so multiple healthcare tools can be executed within a single request.
+
+---
+
+## Challenge 5 – General Healthcare Questions
+
+Not every user request corresponds to a healthcare tool.
+
+Examples include:
+
+- How long should I fast before a blood test?
+- What is hypertension?
+
+### Solution
+
+Integrated ChromaDB with Sentence Transformers to perform semantic retrieval over healthcare FAQ documents.
+
+---
+
+## Challenge 6 – LLM Flexibility
+
+Different LLM providers have different response quality, pricing, and availability.
+
+### Solution
+
+Designed the chatbot to support multiple providers including:
+
+- Google Gemini
+- Groq
+- Nebius
+
+This makes the system more flexible and provider-independent.
 
 ---
 
 # 6. Design Decisions
 
-Several architectural decisions were made to improve both performance and maintainability.
+| Decision | Reason |
+|-----------|--------|
+| LangGraph | Workflow orchestration |
+| Hybrid Intent Detection | Balance speed and accuracy |
+| SQLite | Lightweight local database |
+| ChromaDB | Semantic FAQ retrieval |
+| Sentence Transformers | Efficient embeddings |
+| Multiple LLM Providers | Flexibility and reliability |
+| Modular Architecture | Easier maintenance |
 
-| Decision                | Reason                                                  |
-| ----------------------- | ------------------------------------------------------- |
-| LangGraph               | Stateful workflow orchestration                         |
-| Hybrid Intent Detection | Fast rule-based execution with intelligent LLM fallback |
-| SQLite                  | Lightweight database suitable for rapid development     |
-| ChromaDB                | Efficient semantic retrieval of healthcare FAQs         |
-| Multiple LLM Providers  | Flexibility and provider independence                   |
-| Modular Components      | Easier testing, maintenance, and future expansion       |
-
-These decisions reduced coupling between components and improved the scalability of the application.
+These design decisions improved both the performance and maintainability of the chatbot.
 
 ---
 
 # 7. Key Features
 
-The final chatbot includes:
+The completed chatbot supports:
 
-* Appointment booking
-* Appointment status checking
-* Prescription refill requests
-* Test result retrieval
-* Hybrid intent detection
-* Multi-provider LLM support
-* Slot filling
-* Conversation memory
-* Resume conversations
-* Cancel conversations
-* Multi-intent execution
-* RAG-powered FAQ retrieval
+- Appointment booking
+- Appointment status checking
+- Prescription refill requests
+- Test result retrieval
+- Conversation memory
+- Slot filling
+- Multi-intent execution
+- Session management
+- Conversation cancellation
+- Hybrid intent detection
+- Semantic FAQ retrieval using RAG
+- Multiple LLM providers
 
 ---
 
-# 8. Engineering Improvements
+# 8. Project Evolution
 
-Throughout development, the project underwent several architectural improvements.
+| Initial Version | Final Version |
+|-----------------|---------------|
+| Sequential pipeline | LangGraph workflow |
+| chat_service.py | Graph orchestration |
+| Stateless requests | Stateful conversations |
+| Single intent | Multi-intent execution |
+| No slot filling | Automatic slot filling |
+| No resume support | Conversation resume |
+| No RAG | Semantic FAQ retrieval |
+| Simple chatbot | Conversational AI system |
 
-* Replaced sequential architecture with LangGraph
-* Removed the monolithic orchestration layer
-* Introduced graph-based workflow execution
-* Added conversation state management
-* Implemented slot filling for incomplete requests
-* Added resume and cancel conversation support
-* Enabled execution of multiple intents in a single request
-* Integrated semantic FAQ retrieval using ChromaDB
-* Improved modularity and separation of concerns
-
-These improvements transformed the chatbot from a simple request-response system into a stateful conversational AI application.
+This evolution transformed the project from a simple chatbot into a modular conversational AI platform.
 
 ---
 
 # 9. Results
 
-The completed system successfully demonstrates:
+The final implementation successfully demonstrates:
 
-* Intelligent intent detection
-* Structured parameter extraction
-* Stateful conversation management
-* Multi-turn dialogue handling
-* Multi-intent execution
-* Semantic FAQ retrieval
-* Modular workflow orchestration through LangGraph
+- Intelligent healthcare intent detection
+- Structured parameter extraction
+- Stateful conversation management
+- Multi-turn dialogue support
+- Multi-intent execution
+- Semantic FAQ retrieval
+- Modular workflow orchestration
+- Extensible software architecture
 
-The final architecture is significantly more maintainable than the original implementation and provides a strong foundation for future enhancements.
+The migration to LangGraph significantly improved code organization while making future enhancements considerably easier.
 
 ---
 
-# 10. Future Scope
+# 10. Future Improvements
 
-Potential future improvements include:
+Potential future enhancements include:
 
-* Electronic Health Record (EHR) integration
-* Authentication and user profiles
-* Doctor availability APIs
-* Voice-based interaction
-* Medication reminders
-* Cloud deployment using Docker and Kubernetes
-* Monitoring and observability
-* Automated testing and CI/CD
+- Electronic Health Record (EHR) integration
+- Authentication and user profiles
+- Doctor availability APIs
+- Voice interaction
+- Medication reminders
+- Docker deployment
+- Kubernetes orchestration
+- CI/CD pipeline
+- Monitoring and analytics
 
 ---
 
 # 11. Conclusion
 
-This project evolved from a traditional intent-based chatbot into a modular, stateful conversational AI system.
+This project evolved well beyond the original assignment requirements.
 
-Migrating from a sequential architecture to **LangGraph** enabled conversation memory, slot filling, multi-intent execution, and semantic FAQ retrieval while improving code organization and maintainability.
+What began as a sequential intent-based chatbot was transformed into a modular, stateful conversational AI system orchestrated by LangGraph. Through iterative refactoring, conversation memory, slot filling, multi-intent execution, and semantic FAQ retrieval were successfully integrated while maintaining a clean and extensible architecture.
 
-Beyond implementing healthcare tools, the project demonstrates an understanding of modern conversational AI architecture, workflow orchestration, and software engineering best practices. The resulting solution is scalable, extensible, and well-suited as a foundation for more advanced healthcare assistant applications.
+The final solution demonstrates not only the ability to build an AI-powered healthcare chatbot but also an understanding of software architecture, workflow orchestration, and engineering best practices for modern conversational AI systems.
