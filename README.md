@@ -534,25 +534,6 @@ These changes transformed the project from a linear chatbot into a modular, stat
 
 ---
 
-# 🔮 Future Improvements
-
-* Authentication and user accounts
-* Persistent conversation history
-* Doctor recommendation engine
-* Hospital availability integration
-* Electronic Health Record (EHR) integration
-* Voice-based conversations
-* OCR support for medical reports and prescriptions
-* Medication reminders
-* Calendar integration
-* Docker deployment
-* Kubernetes support
-* CI/CD pipeline
-* Comprehensive automated testing
-* Monitoring and observability
-
----
-
 # 🤝 Acknowledgements
 
 This project was developed as a take-home assignment to demonstrate modern conversational AI architecture using **LangGraph**, **FastAPI**, **LLMs**, and **Retrieval-Augmented Generation (RAG)**.
