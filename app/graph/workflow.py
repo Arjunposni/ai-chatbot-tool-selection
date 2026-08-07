@@ -9,11 +9,11 @@ from typing import Literal
 from langgraph.graph import StateGraph, START, END
 
 from app.graph.state import ChatState
+from app.conversation.slot_filling import next_question
 
 from app.graph.nodes import (
     resume_conversation_node,
     continue_conversation_node,
-    cancel_node,
     detect_intent_node,
     parameter_node,
     multi_intent_node,
@@ -29,9 +29,11 @@ from app.graph.nodes import (
 
 def resume_router(
     state: ChatState,
-) -> Literal["continue_conversation", "cancel"]:
+) -> Literal["continue_conversation", "detect_intent"]:
     """
     Continue an unfinished conversation if one exists.
+    Cancellation is handled inside continue_conversation_node,
+    since it's only meaningful while a conversation is active.
     """
 
     session = state.get("session")
@@ -39,28 +41,34 @@ def resume_router(
     if session and session.get("waiting_for"):
         return "continue_conversation"
 
-    return "cancel"
+    return "detect_intent"
 
 
-def cancel_router(
+def continue_router(
     state: ChatState,
-) -> Literal["detect_intent", "__end__"]:
+) -> Literal["slot_filling", "__end__"]:
     """
-    End the workflow if the user cancelled.
+    If continue_conversation_node already produced a final
+    response (e.g. cancellation), end here. Otherwise proceed
+    to slot filling.
     """
 
     if state.get("response"):
         return END
 
-    return "detect_intent"
+    return "slot_filling"
 
 
 def intent_router(
     state: ChatState,
-) -> Literal["parameters", "rag"]:
+) -> Literal["parameters", "rag", "__end__"]:
     """
-    Route to parameter extraction or RAG.
+    Route to parameter extraction or RAG — or end immediately
+    if a system error response was already set.
     """
+
+    if state.get("response"):
+        return END
 
     if state.get("matched"):
         return "parameters"
@@ -86,17 +94,29 @@ def execution_router(
     state: ChatState,
 ) -> Literal["execute_tool", "multi_intent"]:
     """
-    Decide whether to execute one
-    tool or multiple tools.
+    Decide whether to execute one tool or multiple tools.
+
+    Only routes to multi-intent execution if EVERY detected
+    intent already has its required parameters — otherwise
+    falls back to executing just the primary intent (which has
+    already passed slot filling), matching the original
+    single-intent + slot-filling behavior.
     """
 
-    if len(
-        state.get(
-            "all_intents",
-            [],
+    all_intents = state.get("all_intents", [])
+
+    if len(all_intents) > 1:
+
+        complete = all(
+            next_question(
+                item["intent"],
+                {**item["parameters"], "patient_id": state["patient_id"]},
+            )[0] is None
+            for item in all_intents
         )
-    ) > 1:
-        return "multi_intent"
+
+        if complete:
+            return "multi_intent"
 
     return "execute_tool"
 
@@ -111,64 +131,21 @@ builder = StateGraph(ChatState)
 # Nodes
 # ----------------------------------------------------------
 
-builder.add_node(
-    "resume",
-    resume_conversation_node,
-)
-
-builder.add_node(
-    "continue_conversation",
-    continue_conversation_node,
-)
-
-builder.add_node(
-    "cancel",
-    cancel_node,
-)
-
-builder.add_node(
-    "detect_intent",
-    detect_intent_node,
-)
-
-builder.add_node(
-    "parameters",
-    parameter_node,
-)
-
-builder.add_node(
-    "slot_filling",
-    slot_filling_node,
-)
-
-builder.add_node(
-    "router",
-    lambda state: state,
-)
-
-builder.add_node(
-    "execute_tool",
-    execute_tool_node,
-)
-
-builder.add_node(
-    "multi_intent",
-    multi_intent_node,
-)
-
-builder.add_node(
-    "rag",
-    rag_node,
-)
+builder.add_node("resume", resume_conversation_node)
+builder.add_node("continue_conversation", continue_conversation_node)
+builder.add_node("detect_intent", detect_intent_node)
+builder.add_node("parameters", parameter_node)
+builder.add_node("slot_filling", slot_filling_node)
+builder.add_node("router", lambda state: state)
+builder.add_node("execute_tool", execute_tool_node)
+builder.add_node("multi_intent", multi_intent_node)
+builder.add_node("rag", rag_node)
 
 # ----------------------------------------------------------
 # Start
 # ----------------------------------------------------------
 
-builder.add_edge(
-    START,
-    "resume",
-)
+builder.add_edge(START, "resume")
 
 # ----------------------------------------------------------
 # Resume Routing
@@ -179,7 +156,7 @@ builder.add_conditional_edges(
     resume_router,
     {
         "continue_conversation": "continue_conversation",
-        "cancel": "cancel",
+        "detect_intent": "detect_intent",
     },
 )
 
@@ -187,20 +164,11 @@ builder.add_conditional_edges(
 # Continue Existing Conversation
 # ----------------------------------------------------------
 
-builder.add_edge(
-    "continue_conversation",
-    "slot_filling",
-)
-
-# ----------------------------------------------------------
-# Cancel Routing
-# ----------------------------------------------------------
-
 builder.add_conditional_edges(
-    "cancel",
-    cancel_router,
+    "continue_conversation",
+    continue_router,
     {
-        "detect_intent": "detect_intent",
+        "slot_filling": "slot_filling",
         END: END,
     },
 )
@@ -215,6 +183,7 @@ builder.add_conditional_edges(
     {
         "parameters": "parameters",
         "rag": "rag",
+        END: END,
     },
 )
 
@@ -222,10 +191,7 @@ builder.add_conditional_edges(
 # Parameter Extraction
 # ----------------------------------------------------------
 
-builder.add_edge(
-    "parameters",
-    "slot_filling",
-)
+builder.add_edge("parameters", "slot_filling")
 
 # ----------------------------------------------------------
 # Slot Filling Routing
@@ -257,24 +223,14 @@ builder.add_conditional_edges(
 # Tool Execution
 # ----------------------------------------------------------
 
-builder.add_edge(
-    "execute_tool",
-    END,
-)
-
-builder.add_edge(
-    "multi_intent",
-    END,
-)
+builder.add_edge("execute_tool", END)
+builder.add_edge("multi_intent", END)
 
 # ----------------------------------------------------------
 # FAQ / RAG
 # ----------------------------------------------------------
 
-builder.add_edge(
-    "rag",
-    END,
-)
+builder.add_edge("rag", END)
 
 # ==========================================================
 # Compile

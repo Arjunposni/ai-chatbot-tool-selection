@@ -14,6 +14,19 @@ _REQUIRED_PARAMS = {
 }
 
 
+# Markers suggesting the message may contain more than one request.
+# If present, we skip the rule-based fast path even on a confident
+# single-intent match, since rule-based cannot detect a SECOND
+# intent hiding in the same message — only the LLM path checks
+# all_intents.
+_MULTI_INTENT_MARKERS = [" and ", " also ", ","]
+
+
+def _looks_multi_intent(text: str) -> bool:
+    lower = f" {text.lower()} "
+    return any(marker in lower for marker in _MULTI_INTENT_MARKERS)
+
+
 def detect_intent_hybrid(
     user_query: str,
     patient_id: str = "p1",
@@ -21,7 +34,11 @@ def detect_intent_hybrid(
     """
     Hybrid intent detection strategy.
 
-    1. Rule-based detection identifies the intent quickly.
+    1. Rule-based detection identifies the intent quickly, UNLESS
+       the message looks like it may contain multiple requests
+       (e.g. joined by "and"/"also"/a comma) — those always go
+       through the LLM path, since only the LLM can detect and
+       return multiple intents (all_intents).
     2. If required parameters are needed, the LLM extracts them.
     3. If the LLM fails, keep the rule-based intent.
     """
@@ -33,34 +50,14 @@ def detect_intent_hybrid(
     rule_result = detect_intent_rule_based(user_query)
 
     # -------------------------------------------------
-    # Multi-intent detected by rule-based detector
-    # -------------------------------------------------
-
-    if rule_result.get("all_intents"):
-
-        for item in rule_result["all_intents"]:
-
-            item.setdefault("parameters", {})
-
-            item["parameters"].setdefault(
-                "patient_id",
-                patient_id,
-            )
-
-        return {
-            "matched": True,
-            "all_intents": rule_result["all_intents"],
-            "confidence": "high",
-            "method": "hybrid (rule_based)",
-        }
-
-    # -------------------------------------------------
-    # High-confidence single intent
+    # High-confidence single intent (only trusted outright
+    # if the message doesn't look like a compound request)
     # -------------------------------------------------
 
     if (
         rule_result.get("matched")
         and rule_result.get("confidence") == "high"
+        and not _looks_multi_intent(user_query)
     ):
 
         intent = rule_result["intent"]
@@ -122,7 +119,10 @@ def detect_intent_hybrid(
         }
 
     # -------------------------------------------------
-    # No rule-based match -> LLM fallback
+    # No confident single-intent rule match, OR the message
+    # looks like it may contain multiple requests -> LLM handles
+    # it (and can return all_intents for genuine multi-intent
+    # messages)
     # -------------------------------------------------
 
     llm_result = detect_intent_llm_based(
