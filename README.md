@@ -1,175 +1,412 @@
-# Technical Report
-# Healthcare AI Chatbot with Intelligent Tool Selection
+# 🏥 Healthcare AI Chatbot with Intelligent Tool Selection
 
-**Author:** Arjun Posni
-**Repository:** https://github.com/Arjunposni/ai-chatbot-tool-selection
-**Domain:** Healthcare
+> **An intelligent healthcare chatbot built using LangGraph, FastAPI, SQLite, ChromaDB, and multiple LLM providers to understand user intent, manage conversations, execute healthcare tools, and answer healthcare FAQs using Retrieval-Augmented Generation (RAG).**
 
 ---
 
-# 1. Problem & Approach Summary
+## 📌 Overview
 
-The objective of this project was to build an intelligent healthcare chatbot capable of understanding user intent, selecting the correct healthcare tool, extracting the required parameters, and executing the requested operation — with at least two intent-detection methods researched and empirically compared.
+Healthcare conversations are rarely a single question followed by a single answer. Users may provide incomplete information, ask multiple questions in one message, change their minds midway, or continue an earlier conversation.
 
-Rather than implementing a simple request-response chatbot, this was approached as the design of a complete conversational AI system. During development, the architecture evolved significantly — from a sequential service-based pipeline into a stateful workflow orchestrated by **LangGraph** — and the intent-detection logic itself went through four measured iterations, each evaluated against a structured test dataset. That iteration history (Section 6) is as much a part of this report as the final architecture.
+This project addresses these challenges with a **stateful AI healthcare assistant** powered by **LangGraph**, which orchestrates the conversation instead of following a rigid sequential pipeline.
 
-The final chatbot supports:
+The chatbot intelligently:
 
-- Hybrid intent detection (rule-based + LLM, empirically compared — Section 5)
-- Stateful, multi-turn conversations with slot filling
-- Multi-intent execution (one message, multiple actions)
-- Retrieval-Augmented Generation (RAG) for general health FAQs
-- Multiple swappable LLM providers (Gemini, Groq, Nebius)
-- Conversation resume and cancellation
+* Understands user intent
+* Extracts required parameters
+* Handles missing information through slot filling
+* Maintains conversation state
+* Supports multiple intents in one request
+* Executes healthcare tools
+* Retrieves FAQ answers using semantic search (RAG)
 
----
-
-# 2. System Architecture
-
-## Initial architecture
-The first implementation followed a traditional sequential pipeline:
-
-```
-Frontend → FastAPI → chat_service.py → Intent Detection
-         → Parameter Extraction → Slot Filling → Tool Execution
-```
-
-This worked for simple requests but became harder to extend as conversational features (multi-turn state, multi-intent execution) were added — every new capability meant touching the same central orchestration function.
-
-## Final architecture
-The orchestration layer was refactored to use LangGraph:
-
-```
-Frontend
-    │
-FastAPI  →  graph.invoke(state)
-    │
-LangGraph
-├── Resume Conversation
-├── Continue Conversation (incl. cancel, past-date rejection)
-├── Hybrid Intent Detection (rule-based → LLM fallback)
-├── Parameter Extraction (incl. placeholder/date validation)
-├── Slot Filling
-├── Execute Tool (single or multi-intent)
-└── FAQ Retrieval (RAG)
-```
-
-Each node owns one responsibility; LangGraph manages routing, execution order, and state. FastAPI's `/chat` endpoint is now a thin wrapper: `graph.invoke(state)`.
-
-### Why LangGraph
-As conversation memory, slot filling, resume support, and multi-intent execution were added on top of the original linear pipeline, the sequential architecture became increasingly tightly coupled — new features required modifying the same central function. Restructuring around explicit graph nodes and conditional routers made the system modular, easier to debug (each node's input/output state is inspectable in isolation), and easier to extend without touching unrelated logic.
+Full architecture details, the intent-detection approach comparison, and evaluation results are documented in **`REPORT.md`**.
 
 ---
 
-# 3. LangGraph Workflow
+# ✨ Features
 
-| Node | Responsibility |
+## Healthcare Tools
+
+* ✅ Book Appointment
+* ✅ Check Appointment Status
+* ✅ Request Prescription Refill
+* ✅ View Test Results
+* ✅ Healthcare FAQ Retrieval
+
+## Conversation Intelligence
+
+* ✅ Stateful conversations
+* ✅ Conversation resume
+* ✅ Slot filling
+* ✅ Conversation cancellation
+* ✅ Session management
+* ✅ Follow-up question handling
+
+Example:
+
+```text
+User:
+Book an appointment
+
+Bot:
+Which specialty would you like?
+
+User:
+Cardiology
+
+Bot:
+Which date?
+
+User:
+Tomorrow
+
+Bot:
+Your cardiology appointment has been booked for tomorrow.
+```
+
+## Intelligent Intent Detection
+
+Hybrid architecture:
+
+```
+User Query
+      │
+      ▼
+Regex Rule Detection
+      │
+Intent Found (and message isn't a compound "X and Y" request)?
+   │         │
+ Yes        No
+   │         ▼
+   │     LLM Detection (also handles multi-intent messages)
+   │
+   ▼
+Parameter Extraction + Validation (rejects placeholders, past dates)
+      │
+      ▼
+Slot Filling
+      │
+      ▼
+Tool Execution
+```
+
+Supports multiple LLM providers, switchable via `.env` with no code changes:
+
+* Google Gemini
+* Groq
+* Nebius *(integrated; may require account verification on Nebius's side before use — see Troubleshooting)*
+
+## Multi-Intent Support
+
+The chatbot supports **multiple intents within a single user request**.
+
+Example:
+
+```text
+Check my appointments and show my test results.
+```
+
+The workflow detects both intents, executes both tools, and combines the responses into a single reply.
+
+## Retrieval-Augmented Generation (RAG)
+
+Healthcare FAQs are stored inside **ChromaDB**. Instead of relying only on an LLM, the chatbot retrieves semantically relevant information using sentence embeddings.
+
+Embedding model: `all-MiniLM-L6-v2`
+
+```
+User Question → Sentence Transformer → Vector Embedding
+             → ChromaDB Similarity Search → Relevant FAQ → Response
+```
+
+---
+
+# 🏗 Architecture
+
+```
+                    Frontend
+                        │
+                        ▼
+                    FastAPI API
+                        │
+                        ▼
+               graph.invoke(state)
+                        │
+                        ▼
+               ┌───────────────────┐
+               │    LangGraph      │
+               └───────────────────┘
+                        │
+     ┌──────────────────────────────────────┐
+     │ Resume Conversation                  │
+     │ Continue Conversation (incl. cancel) │
+     │ Hybrid Intent Detection              │
+     │ Parameter Extraction                 │
+     │ Slot Filling                         │
+     │ Execute Tool(s)                      │
+     │ FAQ Retrieval (RAG)                  │
+     └──────────────────────────────────────┘
+                        │
+                        ▼
+                 Final Response
+```
+
+FastAPI's `/chat` endpoint is a thin wrapper — it just calls `graph.invoke(state)`; LangGraph owns the entire conversation lifecycle.
+
+## LangGraph Nodes
+
+| Node                    | Purpose                                       |
+| ----------------------- | --------------------------------------------- |
+| Resume Conversation     | Restores unfinished conversations             |
+| Continue Conversation   | Continues slot filling; handles cancellation and rejects invalid (past) dates for an active session |
+| Hybrid Intent Detection | Regex first; LLM fallback for ambiguity, parameter extraction, and multi-intent messages |
+| Parameter Extraction    | Extracts specialty, dates, medication; validates and rejects placeholder or past-date values |
+| Slot Filling            | Requests missing required parameters, one at a time |
+| Execute Tool            | Executes one or more healthcare functions     |
+| FAQ Retrieval           | Performs semantic search over healthcare FAQs; returns a clarification if nothing relevant is found |
+
+---
+
+# ⚙ Technology Stack
+
+| Layer                | Technology                  |
+| -------------------- | --------------------------- |
+| Backend              | FastAPI                     |
+| Workflow Engine      | LangGraph                   |
+| Programming Language | Python 3.10+                |
+| Database             | SQLite                      |
+| Vector Database      | ChromaDB                    |
+| Embedding Model      | Sentence Transformers (`all-MiniLM-L6-v2`) |
+| LLM Providers        | Google Gemini, Groq, Nebius |
+| Frontend             | HTML, CSS, JavaScript       |
+
+---
+
+# 📁 Project Structure
+
+```text
+app/
+│
+├── graph/
+│   ├── workflow.py       → builds the LangGraph state graph
+│   ├── nodes.py           → each workflow step
+│   └── state.py           → shared ChatState schema
+│
+├── conversation/           → session state, slot filling, date validation
+├── intent/                 → rule-based, LLM-based (Gemini/Groq/Nebius), hybrid
+├── rag/                     → FAQ retrieval (ChromaDB)
+├── services/
+│   └── tool_executor.py    → single interface to run any tool
+├── tools/                   → the 4 healthcare tools + schema
+├── static/ + templates/     → chat UI
+├── db.py                    → creates the local SQLite database
+└── main.py                  → FastAPI app, /chat endpoint
+
+data/
+├── faq_docs.md               → source content for RAG
+└── test_cases.json           → evaluation test set
+
+tests/
+└── run_test_cases.py         → runs the evaluation set
+```
+
+---
+
+# 🚀 Getting Started
+
+## 1. Clone the repository
+
+```bash
+git clone https://github.com/Arjunposni/ai-chatbot-tool-selection.git
+cd ai-chatbot-tool-selection
+```
+
+## 2. Requirements
+
+- Python 3.10 or later (check with `python3 --version`)
+- Git
+- At least one LLM API key — Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) and/or Groq ([console.groq.com/keys](https://console.groq.com/keys)), both free. Nebius is optional (see note above).
+
+## 3. Create a virtual environment
+
+**Linux/macOS:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**Windows:**
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+> ⚠️ Reactivate this every time you open a new terminal for this project — you'll know it's active when your prompt starts with `(venv)`.
+
+## 4. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## 5. Configure environment variables
+
+Create a `.env` file in the project root:
+
+```env
+LLM_PROVIDER=gemini
+
+GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+NEBIUS_API_KEY=your_nebius_api_key
+```
+
+You only need the key for the provider you set as `LLM_PROVIDER`. Switch providers any time (e.g. if you hit a free-tier rate limit) by changing that one line and restarting the server — no code changes needed.
+
+## 6. Initialize the database
+
+**Required before first run** — creates the tables and one sample patient (`p1`):
+
+```bash
+python3 app/db.py
+```
+Expected output: `Healthcare database initialized.`
+
+## 7. Build the FAQ vector index
+
+Run once, and again whenever you edit `data/faq_docs.md`:
+
+```bash
+python3 -m app.rag.faq_retriever
+```
+Expected output: `Indexed N FAQ entries.`
+
+## 8. Run the application
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Open the chat UI: `http://127.0.0.1:8000`
+Interactive API docs: `http://127.0.0.1:8000/docs`
+
+To stop the server: `Ctrl+C`.
+
+---
+
+# 📡 Example API Usage
+
+`POST /chat` accepts:
+```json
+{
+    "message": "Book a cardiology appointment tomorrow",
+    "patient_id": "p1"
+}
+```
+(`patient_id` defaults to `"p1"` if omitted.)
+
+The response always follows this shape:
+```json
+{
+    "user_message": "Book a cardiology appointment tomorrow",
+    "intent_detected": "book_appointment",
+    "method_used": "hybrid (llm)",
+    "tool_result": {
+        "success": true,
+        "appointment_id": 3,
+        "message": "Appointment booked with Cardiology on 2026-08-08."
+    },
+    "response": "Appointment booked with Cardiology on 2026-08-08."
+}
+```
+
+**Slot filling example** — `{"message": "Book appointment"}` →
+```json
+{
+    "user_message": "Book appointment",
+    "intent_detected": "book_appointment",
+    "method_used": "conversation",
+    "tool_result": null,
+    "response": "Which specialty would you like to book an appointment for?"
+}
+```
+
+**Multi-intent example** — `{"message": "Check my appointments and show my test results"}` → `intent_detected` becomes a list (`["check_appointment_status", "get_test_results"]`), and `tool_result` contains a `multi_results` array with one entry per executed tool.
+
+**FAQ example** — `{"message": "How long should I fast before a blood test?"}` → `method_used: "rag"`, and `response` contains the matched FAQ answer.
+
+---
+
+# 💬 Try it in the chat UI
+
+| Try typing... | What happens |
 |---|---|
-| Resume Conversation | Loads any existing per-patient session |
-| Continue Conversation | Resumes slot filling; handles cancellation and past-date rejection for an active session |
-| Hybrid Intent Detection | Rule-based first, LLM fallback for ambiguity/parameter extraction/multi-intent |
-| Parameter Extraction | Extracts specialty/date/medication; validates and rejects placeholder or past-date values |
-| Slot Filling | Asks for any still-missing required parameter, one at a time |
-| Execute Tool | Runs one tool, or several if a multi-intent message has all parameters ready |
-| FAQ Retrieval (RAG) | Falls back to semantic FAQ search when no tool matches; returns a clarification if that also fails |
+| `Show me my upcoming appointments` | Instant response via the rule-based fast path |
+| `Book an appointment` | Bot asks for specialty, then date, then books it |
+| `when's my next visit?` | Paraphrase correctly understood via LLM fallback |
+| `What are your clinic hours?` | Answered from the FAQ knowledge base (RAG) |
+| `I have an issue` | Bot asks for clarification instead of guessing |
+| `Check my appointments and refill my Metformin` | Both actions handled in one reply |
+| `cancel` (mid-conversation) | Cancels whatever is currently pending |
 
 ---
 
-# 4. Tool Layer
+# 🧪 Testing & Evaluation
 
-| Tool | Parameters | Description |
-|---|---|---|
-| `book_appointment` | `patient_id`, `specialty`, `date` | Books an appointment, writes to SQLite |
-| `check_appointment_status` | `patient_id` | Returns all appointments |
-| `request_prescription_refill` | `patient_id`, `medication` | Marks a prescription as refill-requested |
-| `get_test_results` | `patient_id` | Returns lab/test results |
+Run the full evaluation suite (covering clear, ambiguous, multi-intent, complex-negative, and natural-language/paraphrased test cases):
 
-Backed by SQLite (`healthcare_chatbot.db`) — chosen deliberately for zero-setup, single-file portability appropriate to a prototype; a production deployment would move to PostgreSQL for proper concurrency handling.
+```bash
+python -m tests.run_test_cases
+```
 
-**RAG/FAQ layer:** `data/faq_docs.md` is chunked, embedded with `sentence-transformers` (`all-MiniLM-L6-v2`), and indexed in ChromaDB. Requests that don't match a tool are checked against this index before falling back to a clarification message.
+This prints, per case, the expected vs. actual result and which method handled it. Full accuracy results and the iteration history behind them are in **`REPORT.md`**.
 
 ---
 
-# 5. Intent Detection: Approach Comparison
+# 🐛 Troubleshooting
 
-Three approaches were implemented and directly compared, as required by the assignment.
+**`pip install` fails with "externally-managed-environment"**
+The virtual environment isn't activated — re-run the Step 3 activation command, then retry.
 
-| Approach | Accuracy (final eval) | Speed | Cost | Paraphrasing | Multi-intent | Parameter extraction |
-|---|---|---|---|---|---|---|
-| **Rule-based** (regex/keyword) | High only on exact phrasing; fails on paraphrasing entirely | Instant (ms) | Free | ❌ | ❌ (see Section 6.4 for a subtle related bug) | ❌ |
-| **LLM-based** (function calling) | High, handles nuance | Network-bound (hundreds of ms – seconds) | Free-tier rate-limited / paid | ✅ | ✅ (with correct prompting) | ✅ |
-| **Hybrid** (used) | **100% functional correctness on final evaluation run** (Section 7) | Fast for common cases, LLM-speed for the rest | Lower average cost than LLM-only | ✅ | ✅ | ✅ |
+**Chatbot replies with a rate-limit / system error message**
+You've likely hit the Gemini free-tier limit (5 requests/min, ~20/day on the free tier). Switch providers in `.env` (`LLM_PROVIDER=groq`) and restart the server.
 
-**Why hybrid was selected:** it captures rule-based's speed/cost advantage for unambiguous cases (e.g. "show me my lab results" resolves instantly, no API call) while falling back to the LLM exactly where rule-based provably fails — paraphrasing, parameter extraction, and multi-intent messages. In the final evaluation run, roughly a third of clear-request test cases resolved entirely via the free, instant rule-based path.
+**Nebius returns a 401 Unauthorized error**
+Nebius may require manual account verification before API keys work — this is a known, occasionally slow process on their end, unrelated to this codebase. Use Gemini or Groq in the meantime.
 
-**LLM provider comparison:** Gemini, Groq, and Nebius were all integrated behind a single `LLM_PROVIDER` environment-variable dispatcher, so the provider can be swapped with no code changes. In practice, Gemini's function calling was the most consistently reliable; Groq (Llama models) occasionally produced malformed or hallucinated tool calls even with retry logic (Section 6.6); Nebius was integrated but could not be evaluated in this report due to a pending account-verification block on the provider's side.
+**`ModuleNotFoundError` on any command**
+Confirm the virtual environment is active (`(venv)` in your prompt) and that Step 4 completed without errors.
 
----
+**Browser shows "Unable to connect to the Healthcare AI server"**
+Check the terminal running `uvicorn` for a traceback — this almost always means Step 6 or Step 7 was skipped.
 
-# 6. Engineering Challenges & Solutions
-
-## 6.1 Sequential architecture became hard to extend
-**Problem:** the original service-based pipeline required touching central orchestration logic for every new conversational feature.
-**Solution:** migrated orchestration to LangGraph (Section 2), isolating each responsibility into an independently testable node.
-
-## 6.2 Incomplete requests (missing parameters)
-**Problem:** "Book appointment" alone can't execute — `specialty` and `date` are missing.
-**Solution:** slot filling asks for exactly what's missing, one question at a time, and resumes correctly across messages.
-
-## 6.3 Multi-turn conversation memory
-**Problem:** healthcare requests often span multiple messages (specialty → date → confirm).
-**Solution:** per-patient session state tracks the in-progress intent and collected parameters, and resumes automatically on the next message. Session state is in-memory only — a deliberate prototype-scope choice; production would use Redis or a database-backed store to survive restarts and scale across instances.
-
-## 6.4 Multi-intent requests were only partially handled — twice
-This was the most iterated-on problem in the project, in two distinct phases:
-
-**Phase 1 — the LLM only returned its first function call.** "Check my appointments and refill my Metformin" only ever executed the first action. Fixed by reading *all* returned function calls (not just index `[0]`) from both Gemini and Groq, and executing every intent once confirmed each has its required parameters — otherwise falling back to single-intent + slot filling.
-
-**Phase 2 (found later, during LangGraph testing) — the rule-based fast path bypassed multi-intent detection entirely.** Because `hybrid.py` returned immediately on any confident rule-based match, a message like "check my appointments and refill my Metformin" — where the *first* clause alone matched a simple rule pattern — never reached the LLM at all, silently dropping the second request. Fixed by detecting compound-message markers (" and ", " also ", a comma) and routing those messages through the LLM path regardless of whether the first clause matches a rule, since only the LLM path can detect and return multiple intents.
-
-## 6.5 Two distinct parameter-quality bugs
-- **Placeholder values:** the LLM sometimes filled a missing parameter with a literal string like `"unknown"` instead of omitting it — this passed the original missing-value check (which only looked for `None`/empty string) and caused tool execution with garbage data ("Appointment booked with unknown on unknown"). Fixed by treating a set of known placeholder values as missing.
-- **Invalid past dates:** a request like "book the cardiologist for yesterday" could pass straight through to booking with a literal past date. Fixed with a shared `normalize_date()`/`check_past_date()` helper used consistently across first-message parsing, follow-up-reply parsing, *and* a final validation pass on the merged parameter dict — this last step was necessary because a bad value supplied directly by the LLM's own extraction would otherwise survive untouched (`dict.update()` only adds keys, it doesn't remove a bad one already present).
-
-## 6.6 LLM provider reliability and rate limits
-- Gemini's free tier (5 requests/minute, ~20/day observed) caused repeated `429 RESOURCE_EXHAUSTED` errors mid-evaluation. Addressed with retry/backoff using the API's suggested retry delay, and by adding Groq as a swappable fallback provider.
-- An earlier version of the error-handling code conflated genuine API failures with real "no match" cases, silently showing "I couldn't understand your request" for both — which made debugging the rate-limit issue significantly harder until fixed to surface system errors distinctly.
-- Groq's Llama models occasionally emitted malformed function-call syntax, including one case of hallucinating a nonexistent tool (`brave_search`) never defined in the schema. A retry-on-malformed-output wrapper improved but did not fully eliminate this — documented as an open provider-reliability gap rather than fully resolved, given time constraints.
-- SDK/model churn: `google-generativeai` was deprecated mid-project (migrated to `google-genai`); `gemini-1.5-flash` and `gemini-2.5-flash` both returned 404 "no longer available to new users" within the same development window.
-
-## 6.7 A genuine precision/recall trade-off, found and resolved
-Fixing the multi-intent limitation (6.4, Phase 1) required strengthening the LLM prompt to more assertively call multiple functions for compound messages. This had a real, measured side effect: the model became more willing to call *some* tool overall, which also caused it to start guessing on genuinely vague single-intent input it had previously (correctly) declined — ambiguous-category accuracy dropped from 67% to 33% in the very next evaluation run (Section 7). This was resolved not by reverting the fix, but by adding an explicit "do not guess on vague input" instruction with concrete negative examples drawn directly from the failing test cases — which fully recovered ambiguous accuracy to 100% while keeping the multi-intent capability. This is detailed with real run-by-run numbers in Section 7, because the trade-off and its resolution are more informative shown than described.
+**Want a clean database to start fresh?**
+```bash
+rm healthcare_chatbot.db
+python3 app/db.py
+```
 
 ---
 
-# 7. Evaluation
+# 🔄 Project Evolution
 
-A test dataset (`data/test_cases.json`) covering **clear**, **ambiguous**, **multi-intent**, **complex-negative** (memory-recall and general-knowledge questions that should *not* trigger a tool), and **natural-language/paraphrased** requests was run through the hybrid pipeline via `tests/run_test_cases.py` across four full iterations of the system, rather than a single pass — because the intermediate results are more informative than the final number alone.
+The chatbot underwent a significant architectural redesign during development:
 
-| Run | Change made | Clear | Ambiguous | Multi-intent | Sensitive / Complex-neg | Overall (strict) |
-|---|---|---|---|---|---|---|
-| 1 — Baseline hybrid | Initial rule + LLM hybrid | 11/11 | 4/6 (67%) | 0/4 full, 4/4 partial (1st function call only) | 4/4 | 76% |
-| 2 — Multi-intent fix | Read all function calls; strengthened multi-intent prompt | 11/11 | 2/6 (33%) — regression | 4/4 partial (script-verified live in UI) | 4/4 | 68% |
-| 3 — Refined prompt | Added explicit "don't guess on vague input" negative examples | 11/11 | 6/6 (100%) — recovered | 4/4 partial (script limit) | 4/4 | 84% |
-| 4 — LangGraph + fast-path fix | Migrated to LangGraph; fixed rule-based fast path skipping multi-intent | 8/8 | 6/6 (100%) | 4/4 — both tool calls confirmed via raw output | 4/4 | 100% functional / 21/25 by script's strict single-field check |
+**Initial implementation:** sequential pipeline, service-based orchestration (`chat_service.py`), limited conversation handling.
 
-**Reading the strict-score gap in Run 4:** the evaluation script only checks the primary `intent` field per case, not the full list of tool calls a multi-intent request produces. Raw `TOOL CALLS` output from the same run shows all four multi-intent cases correctly generating **two** correct function calls each — genuinely correct behavior across the full set. This is a known limitation of the evaluation script, not the chatbot, and is listed as a future improvement (Section 8).
+**Final implementation:** migrated to LangGraph, added conversation memory, slot filling, resume/cancel support, multi-intent execution, RAG, and multiple swappable LLM providers.
 
-**Test category additions between runs:** the original "sensitive-information" category was later broadened into "complex-negative" cases — questions like "I forgot what medication I'm taking" or "what is Metformin used for" — which test whether the system correctly declines to guess when no real patient-specific action is being requested, rather than only testing sensitive-data handling. All four complex-negative cases passed in the final run.
+Beyond architecture, the intent-detection logic itself went through several rounds of measured evaluation, bug-fixing, and re-testing — including a real precision/recall trade-off that was discovered and resolved. See `REPORT.md` for the full run-by-run evaluation history.
 
 ---
 
-# 8. Future Improvements
+# 🤝 Acknowledgements
 
-- Fix the evaluation script to score against the full `all_intents` list, not just the primary intent, so multi-intent cases are credited accurately without needing manual verification of raw tool-call output.
-- Persistent, multi-instance conversation state (Redis or a database-backed session store) instead of in-memory-per-process.
-- Resolve Nebius account verification and complete a real evaluation of it as a third provider option.
-- Improve Groq reliability, or restrict its use to only when Gemini is rate-limited, given its observed malformed-output rate.
-- Expand the test dataset beyond 25 cases for more statistically meaningful percentages, particularly for the smaller ambiguous/multi-intent categories.
-- Add structured latency/cost instrumentation (`time.time()` around each detection call) to turn the qualitative speed comparison in Section 5 into measured numbers.
+Developed as a take-home assignment demonstrating conversational AI architecture using **LangGraph**, **FastAPI**, multiple **LLM providers**, and **Retrieval-Augmented Generation (RAG)** — with an emphasis on clean software architecture, modularity, and evidence-based iteration over a purely rule-based chatbot.
 
 ---
 
-# 9. Conclusion
+# 📄 License
 
-This project evolved substantially beyond the original assignment scope. What began as a sequential, single-intent chatbot was rebuilt into a modular, stateful conversational AI system orchestrated by LangGraph — supporting multi-turn slot filling, multi-intent execution, RAG-based FAQ answering, and multiple swappable LLM providers. More importantly, the intent-detection approach was not just built once but iteratively evaluated, broken, diagnosed, and improved across four measured runs — including a genuine precision/recall trade-off that was found, understood, and resolved rather than avoided. That evidence-driven iteration process, as much as the final architecture, is the core deliverable of this report.
+This project is intended for educational and evaluation purposes as part of a software engineering take-home assignment.
