@@ -8,10 +8,12 @@ updates the shared ChatState.
 """
 
 from app.graph.state import ChatState
-from app.conversation.parameter_extractor import extract_parameter
+from app.conversation.parameter_parser import (
+    extract_parameter,
+    extract_parameters,
+)
 from app.conversation.date_utils import normalize_date, check_past_date
 from app.intent.hybrid import detect_intent_hybrid
-from app.intent.parameter_parser import extract_parameters
 
 from app.rag.faq_retriever import search_faq
 
@@ -313,6 +315,11 @@ def rag_node(state: ChatState) -> ChatState:
     faq = search_faq(
         state["message"],
     )
+    print("\n========== RAG DEBUG ==========")
+    print("QUERY:", state["message"])
+    print("FAQ RESULT:", faq)
+    print("================================\n")
+
 
     state["faq"] = faq
 
