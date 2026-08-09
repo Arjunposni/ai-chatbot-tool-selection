@@ -78,7 +78,11 @@ def chat(request: ChatRequest):
         "message": request.message,
         "patient_id": request.patient_id,
     }
-
+    print("\n" + "=" * 80)
+    print("LANGGRAPH INITIAL STATE")
+    print(state)
+    print("=" * 80)
+    
     result = graph.invoke(state)
 
     print("\n" + "=" * 80)

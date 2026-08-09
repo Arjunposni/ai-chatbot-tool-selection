@@ -170,18 +170,6 @@ matches one or more available tools.
             )
 
             message = response.choices[0].message
-            print("\n" + "=" * 70)
-
-            print("USER QUERY:")
-            print(user_query)
-
-            print("\nMESSAGE CONTENT:")
-            print(message.content)
-
-            print("\nTOOL CALLS:")
-            print(message.tool_calls)
-
-            print("=" * 70 + "\n")
 
             if message.tool_calls:
 
