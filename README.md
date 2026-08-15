@@ -415,6 +415,11 @@ Developed as a take-home assignment demonstrating conversational AI architecture
 
 ---
 
+## 🎥 Demo Video
+[Watch on Loom](https://www.loom.com/share/ff718195565543e3852742879332577b) · [Backup on Google Drive](https://drive.google.com/file/d/1E23SdU2cHM91QpW58ScgyeovREwVxbJO/view?usp=drive_link)
+
+---
+
 # 📄 License
 
 This project is intended for educational and evaluation purposes as part of a software engineering take-home assignment.
