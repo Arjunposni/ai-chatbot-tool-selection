@@ -1,0 +1,572 @@
+{
+  "timestamp": "20260815T023606Z",
+  "tag": "baseline",
+  "summary": {
+    "total": 25,
+    "passed": 25,
+    "pass_rate": 1.0,
+    "by_category": {
+      "clear": {
+        "passed": 8,
+        "total": 8,
+        "pass_rate": 1.0
+      },
+      "ambiguous": {
+        "passed": 6,
+        "total": 6,
+        "pass_rate": 1.0
+      },
+      "multi_intent": {
+        "passed": 4,
+        "total": 4,
+        "pass_rate": 1.0
+      },
+      "complex_negative": {
+        "passed": 4,
+        "total": 4,
+        "pass_rate": 1.0
+      },
+      "natural_language": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 1.0
+      }
+    },
+    "by_dimension": {
+      "intent_match": 25,
+      "behavior_match": 25,
+      "param_match": 25
+    }
+  },
+  "results": [
+    {
+      "id": "clear_01",
+      "category": "clear",
+      "input": "I want to book an appointment with a cardiologist for 2026-08-20",
+      "expected_intents": [
+        "book_appointment"
+      ],
+      "actual_intents": [
+        "book_appointment"
+      ],
+      "expected_parameters": {
+        "specialty": "Cardiology",
+        "date": "2026-08-20"
+      },
+      "actual_parameters": {
+        "patient_id": "p1",
+        "specialty": "Cardiology",
+        "date": "2026-08-20"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 3213.1,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "clear_02",
+      "category": "clear",
+      "input": "Show me my upcoming appointments",
+      "expected_intents": [
+        "check_appointment_status"
+      ],
+      "actual_intents": [
+        "check_appointment_status"
+      ],
+      "expected_parameters": {},
+      "actual_parameters": {
+        "patient_id": "p1"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 0.7,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "clear_03",
+      "category": "clear",
+      "input": "I need a refill for my Metformin prescription",
+      "expected_intents": [
+        "request_prescription_refill"
+      ],
+      "actual_intents": [
+        "request_prescription_refill"
+      ],
+      "expected_parameters": {
+        "medication": "Metformin"
+      },
+      "actual_parameters": {
+        "patient_id": "p1",
+        "medication": "Metformin"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1861.7,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "clear_04",
+      "category": "clear",
+      "input": "Can you show me my lab results?",
+      "expected_intents": [
+        "get_test_results"
+      ],
+      "actual_intents": [
+        "get_test_results"
+      ],
+      "expected_parameters": {},
+      "actual_parameters": {
+        "patient_id": "p1"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 0.1,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "clear_05",
+      "category": "clear",
+      "input": "Schedule a dermatology appointment tomorrow",
+      "expected_intents": [
+        "book_appointment"
+      ],
+      "actual_intents": [
+        "book_appointment"
+      ],
+      "expected_parameters": {
+        "specialty": "Dermatology"
+      },
+      "actual_parameters": {
+        "patient_id": "p1",
+        "specialty": "dermatology",
+        "date": "tomorrow"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1869.3,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "clear_06",
+      "category": "clear",
+      "input": "Do I have any appointments next week?",
+      "expected_intents": [
+        "check_appointment_status"
+      ],
+      "actual_intents": [
+        "check_appointment_status"
+      ],
+      "expected_parameters": {},
+      "actual_parameters": {
+        "patient_id": "p1"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 2034.8,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "clear_07",
+      "category": "clear",
+      "input": "Please renew my blood pressure medication",
+      "expected_intents": [
+        "request_prescription_refill"
+      ],
+      "actual_intents": [
+        "request_prescription_refill"
+      ],
+      "expected_parameters": {},
+      "actual_parameters": {
+        "patient_id": "p1",
+        "medication": "blood pressure medication"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 2159.9,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "clear_08",
+      "category": "clear",
+      "input": "How did my blood test come back?",
+      "expected_intents": [
+        "get_test_results"
+      ],
+      "actual_intents": [
+        "get_test_results"
+      ],
+      "expected_parameters": {},
+      "actual_parameters": {
+        "patient_id": "p1"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1723.6,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "amb_01",
+      "category": "ambiguous",
+      "input": "I have an issue.",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1960.8,
+      "error": null,
+      "notes": "vague single-word complaint - should decline, not guess a tool"
+    },
+    {
+      "id": "amb_02",
+      "category": "ambiguous",
+      "input": "I need help.",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1937.2,
+      "error": null,
+      "notes": "no actionable info - should decline"
+    },
+    {
+      "id": "amb_03",
+      "category": "ambiguous",
+      "input": "Something doesn't feel right.",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1853.9,
+      "error": null,
+      "notes": "vague symptom mention without specifics - should decline (previously mis-matched get_test_results)"
+    },
+    {
+      "id": "amb_04",
+      "category": "ambiguous",
+      "input": "I'm not feeling well.",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 2215.9,
+      "error": null,
+      "notes": "generic unwellness statement - should decline"
+    },
+    {
+      "id": "amb_05",
+      "category": "ambiguous",
+      "input": "I need to see someone.",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 2387.8,
+      "error": null,
+      "notes": "could imply booking but not explicit enough - should decline (previously mis-matched book_appointment)"
+    },
+    {
+      "id": "amb_06",
+      "category": "ambiguous",
+      "input": "Can you tell me what's wrong with me?",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 2259.4,
+      "error": null,
+      "notes": "asks AI for a diagnosis, not a tool action - should decline"
+    },
+    {
+      "id": "multi_01",
+      "category": "multi_intent",
+      "input": "Check my appointments and refill my Metformin.",
+      "expected_intents": [
+        "check_appointment_status",
+        "request_prescription_refill"
+      ],
+      "actual_intents": [
+        "check_appointment_status",
+        "request_prescription_refill"
+      ],
+      "expected_parameters": {
+        "medication": "Metformin"
+      },
+      "actual_parameters": {
+        "patient_id": "p1",
+        "medication": "Metformin"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 2243.6,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "multi_02",
+      "category": "multi_intent",
+      "input": "Book a cardiology appointment tomorrow and show my lab results.",
+      "expected_intents": [
+        "book_appointment",
+        "get_test_results"
+      ],
+      "actual_intents": [
+        "book_appointment",
+        "get_test_results"
+      ],
+      "expected_parameters": {
+        "specialty": "Cardiology",
+        "date": "tomorrow"
+      },
+      "actual_parameters": {
+        "patient_id": "p1",
+        "specialty": "Cardiology",
+        "date": "tomorrow"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 2679.4,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "multi_03",
+      "category": "multi_intent",
+      "input": "Show my lab results and check my appointments.",
+      "expected_intents": [
+        "get_test_results",
+        "check_appointment_status"
+      ],
+      "actual_intents": [
+        "get_test_results",
+        "check_appointment_status"
+      ],
+      "expected_parameters": {},
+      "actual_parameters": {
+        "patient_id": "p1"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1928.6,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "multi_04",
+      "category": "multi_intent",
+      "input": "Refill my Metformin and book a dermatology appointment tomorrow.",
+      "expected_intents": [
+        "request_prescription_refill",
+        "book_appointment"
+      ],
+      "actual_intents": [
+        "request_prescription_refill",
+        "book_appointment"
+      ],
+      "expected_parameters": {
+        "medication": "Metformin",
+        "specialty": "Dermatology",
+        "date": "tomorrow"
+      },
+      "actual_parameters": {
+        "patient_id": "p1",
+        "medication": "Metformin",
+        "specialty": "Dermatology",
+        "date": "tomorrow"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 2465.5,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "negctx_01",
+      "category": "complex_negative",
+      "input": "I was prescribed medicine last month, but I can't remember which one.",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 3252.0,
+      "error": null,
+      "notes": "memory-recall question about own prescriptions - not a refill request, should decline"
+    },
+    {
+      "id": "negctx_02",
+      "category": "complex_negative",
+      "input": "I've been having chest discomfort for two days and would like to consult someone.",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 3194.5,
+      "error": null,
+      "notes": "describes a symptom and desire to consult - not an explicit booking request, should decline"
+    },
+    {
+      "id": "negctx_03",
+      "category": "complex_negative",
+      "input": "I forgot what medication I'm taking.",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 3386.4,
+      "error": null,
+      "notes": "memory-recall question - should decline, not attempt a refill"
+    },
+    {
+      "id": "negctx_04",
+      "category": "complex_negative",
+      "input": "Can you explain what Metformin is used for?",
+      "expected_intents": [],
+      "actual_intents": [],
+      "expected_parameters": {},
+      "actual_parameters": {},
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 3381.2,
+      "error": null,
+      "notes": "general medical-knowledge question - should decline, not call a tool"
+    },
+    {
+      "id": "nl_01",
+      "category": "natural_language",
+      "input": "When's my next visit?",
+      "expected_intents": [
+        "check_appointment_status"
+      ],
+      "actual_intents": [
+        "check_appointment_status"
+      ],
+      "expected_parameters": {},
+      "actual_parameters": {
+        "patient_id": "p1"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1430.4,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "nl_02",
+      "category": "natural_language",
+      "input": "Need more of my Metformin.",
+      "expected_intents": [
+        "request_prescription_refill"
+      ],
+      "actual_intents": [
+        "request_prescription_refill"
+      ],
+      "expected_parameters": {
+        "medication": "Metformin"
+      },
+      "actual_parameters": {
+        "patient_id": "p1",
+        "medication": "Metformin"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1629.4,
+      "error": null,
+      "notes": ""
+    },
+    {
+      "id": "nl_03",
+      "category": "natural_language",
+      "input": "How'd my bloodwork come back?",
+      "expected_intents": [
+        "get_test_results"
+      ],
+      "actual_intents": [
+        "get_test_results"
+      ],
+      "expected_parameters": {},
+      "actual_parameters": {
+        "patient_id": "p1"
+      },
+      "intent_pass": true,
+      "behavior_pass": true,
+      "param_pass": true,
+      "pass": true,
+      "elapsed_ms": 1956.0,
+      "error": null,
+      "notes": ""
+    }
+  ]
+}

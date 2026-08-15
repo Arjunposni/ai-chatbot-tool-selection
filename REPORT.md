@@ -128,6 +128,10 @@ Initially, only the first detected tool call was executed. The solution was to p
 
 Improving multi-intent detection initially reduced performance on ambiguous requests because the model became more eager to call tools. Adding explicit negative prompting restored ambiguous-case accuracy to **100%** while preserving multi-intent capability.
 
+### 6.8 Single-Dimension Evaluation Scoring
+
+The original evaluation script (`tests/run_test_cases.py`) scored only the primary detected intent field, so it could not verify multi-intent correctness even after the underlying detection logic was fixed (Section 6.4) — Run 4's "100% functional correctness" had to be confirmed manually in the chat UI rather than by the script itself. This was resolved by replacing it with a dedicated eval harness (Section 7.1).
+
 ---
 
 # 7. Evaluation
@@ -139,7 +143,32 @@ The chatbot was evaluated using a dataset containing clear requests, ambiguous p
 | 1 | Initial Hybrid | 76% |
 | 2 | Multi-intent Fix | 68% |
 | 3 | Prompt Refinement | 84% |
-| 4 | LangGraph + Final Hybrid | **100% functional correctness** |
+| 4 | LangGraph + Final Hybrid | 100% functional correctness (confirmed manually; scoring script limited to primary intent) |
+| 5 | Eval Harness (`app/eval/scorer.py`) | **25/25 (100%) — verified programmatically across all three scoring dimensions** |
+
+## 7.1 Eval Harness
+
+Run 4 exposed a real limitation: the evaluation script could confirm correctness of the *primary* detected intent, but not the full multi-intent behavior, parameter quality, or execute-vs-decline correctness — those had to be checked by hand. To close this gap, the evaluation script was rebuilt as a proper eval harness (`app/eval/scorer.py`) that scores each of the 25 cases in `data/test_cases.json` on three independent dimensions:
+
+- **Intent match** — the full set of detected tool(s) matches the expected set, not just the first one
+- **Behavior match** — correct execute vs. decline vs. multi-intent-execute classification, which specifically covers the ambiguous and complex-negative categories where the correct behavior is refusing to call a tool
+- **Parameter match** — extracted parameters are present and correct, with placeholder values (e.g. `"unknown"`) explicitly treated as a failure
+
+Run 5 results, broken down by category:
+
+| Category | Cases | Pass Rate |
+|----------|-------|-----------|
+| Clear | 8 | 100% |
+| Ambiguous | 6 | 100% |
+| Multi-intent | 4 | 100% |
+| Complex-negative | 4 | 100% |
+| Natural language / paraphrased | 3 | 100% |
+
+And by dimension (out of 25 total cases): intent match 25/25, behavior match 25/25, parameter match 25/25 — the first fully programmatic confirmation of what Run 4 could only demonstrate manually.
+
+Each run is saved as a timestamped JSON report under `app/eval/runs/`, tagged via `--tag` (e.g. `baseline`), enabling regression comparison across future changes to prompts, hybrid logic, or LLM provider without re-deriving results by hand.
+
+**Note on interpreting the 25/25 result:** this is a strong baseline, but the test set is fixed and has already been iterated against across five runs. It confirms the hybrid detector correctly handles every known case, not that it generalizes to unseen phrasing — see Section 8.
 
 The final system successfully handled:
 
@@ -149,21 +178,19 @@ The final system successfully handled:
 - Multi-intent execution
 - FAQ retrieval through RAG
 
-The remaining evaluation limitation comes from the script scoring only the primary detected intent instead of every detected tool call.
-
 ---
 
 # 8. Future Improvements
 
-- Update the evaluation script to score multiple detected intents.
+- Expand the evaluation dataset with adversarial cases not already tuned against (new phrasings of ambiguous inputs, three-intent messages, typos), to test generalization rather than memorization of the existing 25 cases.
 - Replace in-memory sessions with Redis or a database-backed store.
 - Complete Nebius evaluation.
 - Improve fallback reliability for Groq.
-- Expand the evaluation dataset.
 - Measure latency and API cost quantitatively.
+- Add unit tests for individual conversation/parameter-extraction functions (e.g. `date_utils.normalize_date()`, `slot_filling.missing_slots()`) as a complement to the end-to-end eval harness.
 
 ---
 
 # 9. Conclusion
 
-This project evolved from a simple sequential chatbot into a modular conversational AI system built with LangGraph. By combining hybrid intent detection, slot filling, multi-intent execution, conversation memory, RAG, and multiple LLM providers, the chatbot satisfies the assignment requirements while remaining modular and extensible. Most importantly, every major architectural decision was validated through iterative evaluation, making the final solution evidence-driven rather than assumption-driven.
+This project evolved from a simple sequential chatbot into a modular conversational AI system built with LangGraph. By combining hybrid intent detection, slot filling, multi-intent execution, conversation memory, RAG, and multiple LLM providers, the chatbot satisfies the assignment requirements while remaining modular and extensible. Most importantly, every major architectural decision was validated through iterative evaluation — culminating in a dimension-based eval harness that turned a manually-confirmed result into a programmatically verified one — making the final solution evidence-driven rather than assumption-driven.

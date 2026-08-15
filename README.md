@@ -199,16 +199,16 @@ app/
 ├── services/
 │   └── tool_executor.py    → single interface to run any tool
 ├── tools/                   → the 4 healthcare tools + schema
+├── eval/
+│   ├── scorer.py            → evaluation harness (see Testing & Evaluation)
+│   └── runs/                 → timestamped JSON reports from each eval run
 ├── static/ + templates/     → chat UI
 ├── db.py                    → creates the local SQLite database
 └── main.py                  → FastAPI app, /chat endpoint
 
 data/
 ├── faq_docs.md               → source content for RAG
-└── test_cases.json           → evaluation test set
-
-tests/
-└── run_test_cases.py         → runs the evaluation set
+└── test_cases.json           → evaluation test set (25 cases across 5 categories)
 ```
 
 ---
@@ -354,13 +354,21 @@ The response always follows this shape:
 
 # 🧪 Testing & Evaluation
 
-Run the full evaluation suite (covering clear, ambiguous, multi-intent, complex-negative, and natural-language/paraphrased test cases):
+The evaluation suite is an eval harness (`app/eval/scorer.py`) that runs the 25 cases in `data/test_cases.json` against the hybrid intent detector and scores each one on **three independent dimensions** rather than a single pass/fail:
+
+* **Intent match** — did it call the right tool(s), and all of them
+* **Behavior match** — did it correctly execute vs. correctly decline (important for the ambiguous / complex-negative categories, where the right answer is *not* calling a tool)
+* **Parameter match** — are the extracted parameters correct, with no missing values or placeholder junk (e.g. `"unknown"`)
+
+Run it from the project root:
 
 ```bash
-python -m tests.run_test_cases
+python -m app.eval.scorer --cases data/test_cases.json --tag baseline
 ```
 
-This prints, per case, the expected vs. actual result and which method handled it. Full accuracy results and the iteration history behind them are in **`REPORT.md`**.
+Each run prints a summary (overall + per-category + per-dimension pass rates, plus a breakdown of any failures with the specific reason each one failed) and saves a timestamped JSON report to `app/eval/runs/`. Use `--tag` to label a run (e.g. `--tag post-nebius-swap`) so results can be compared across changes to the prompts, the hybrid logic, or the LLM provider — this is what makes it possible to catch a regression (like the multi-intent fix that temporarily dropped ambiguous-case accuracy) automatically instead of re-running and comparing by hand.
+
+Full accuracy results and the iteration history behind them are in **`REPORT.md`**.
 
 ---
 
@@ -395,7 +403,7 @@ The chatbot underwent a significant architectural redesign during development:
 
 **Initial implementation:** sequential pipeline, service-based orchestration (`chat_service.py`), limited conversation handling.
 
-**Final implementation:** migrated to LangGraph, added conversation memory, slot filling, resume/cancel support, multi-intent execution, RAG, and multiple swappable LLM providers.
+**Final implementation:** migrated to LangGraph, added conversation memory, slot filling, resume/cancel support, multi-intent execution, RAG, multiple swappable LLM providers, and a dimension-based eval harness for regression tracking.
 
 Beyond architecture, the intent-detection logic itself went through several rounds of measured evaluation, bug-fixing, and re-testing — including a real precision/recall trade-off that was discovered and resolved. See `REPORT.md` for the full run-by-run evaluation history.
 

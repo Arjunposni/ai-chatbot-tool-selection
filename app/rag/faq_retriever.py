@@ -10,6 +10,8 @@ _client = chromadb.PersistentClient(path="chroma_db")
 _embedding_fn = None
 
 
+
+
 def get_embedding_function():
     """
     Lazily initialize the embedding model.
@@ -116,6 +118,27 @@ def search_faq(
         COLLECTION_NAME,
         embedding_function=get_embedding_function(),
     )
+    embedding_fn = get_embedding_function()
+
+    query_embedding = embedding_fn([query])[0]
+
+    print("\n" + "=" * 80)
+    print("QUERY VECTOR EMBEDDING")
+    print("=" * 80)
+
+    print("QUERY:")
+    print(query)
+
+    print("\nMODEL:")
+    print("all-MiniLM-L6-v2")
+
+    print("\nVECTOR DIMENSIONS:")
+    print(len(query_embedding))
+
+    print("\nVECTOR:")
+    print(query_embedding)
+
+    print("=" * 80)
 
     results = collection.query(
         query_texts=[query],
